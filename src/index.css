@@ -55,3 +55,64 @@ button:disabled { cursor: not-allowed; }
 ::-webkit-scrollbar-thumb:hover { background: #9ba7b5; }
 
 ::selection { background: #f5d51d; color: #082b5c; }
+
+
+/* Admin: responsive navigation and compact layouts on phones/tablets. */
+.admin-sidebar {
+  width: 220px;
+  min-width: 220px;
+  height: 100%;
+  flex: 0 0 220px;
+  overflow: hidden;
+  transition: width 180ms ease, min-width 180ms ease, flex-basis 180ms ease;
+}
+.admin-menu-toggle { border-radius: 4px; }
+.admin-sidebar-backdrop { border: 0; }
+
+@media (min-width: 768px) {
+  .admin-sidebar[data-open="false"] {
+    width: 0;
+    min-width: 0;
+    flex-basis: 0;
+  }
+  .admin-sidebar[data-open="false"] > aside { display: none; }
+}
+
+@media (max-width: 767px) {
+  .admin-sidebar {
+    position: fixed;
+    z-index: 50;
+    inset: 0 auto 0 0;
+    width: min(286px, 86vw);
+    min-width: 0;
+    height: 100dvh;
+    flex: none;
+    transform: translateX(-105%);
+    transition: transform 180ms ease;
+    box-shadow: 12px 0 30px rgb(0 0 0 / 18%);
+  }
+  .admin-sidebar[data-open="true"] { transform: translateX(0); }
+  .admin-header { height: 56px; min-height: 56px; gap: 9px; padding-left: 12px; padding-right: 12px; }
+  .admin-header h1 { width: auto; min-width: 0; flex: 0 1 auto; font-size: 15px; white-space: nowrap; }
+  .admin-header > div.flex-1:not(.relative) { display: none; }
+  .admin-header > div.relative { flex-shrink: 0; }
+  .admin-header .max-w-sm { max-width: none; min-width: 0; flex: 1 1 auto; }
+  .admin-header input { font-size: 12px; padding-top: 8px; padding-bottom: 8px; }
+  .admin-header input::placeholder { color: transparent; }
+  .admin-header .relative > button { width: 34px; height: 34px; }
+  .admin-content { -webkit-overflow-scrolling: touch; }
+  .admin-content > div { max-width: 100%; }
+  .admin-content .grid { grid-template-columns: repeat(1, minmax(0, 1fr)); }
+  .admin-content table { min-width: 620px; }
+  .admin-content table { display: block; max-width: 100%; overflow-x: auto; }
+  .admin-content [class*="p-6"] { padding: 14px; }
+  .admin-content [class*="p-8"] { padding: 16px; }
+  .admin-content [class*="gap-6"] { gap: 12px; }
+  .admin-content [class*="gap-8"] { gap: 14px; }
+}
+
+@media (max-width: 380px) {
+  .admin-header { gap: 7px; }
+  .admin-header h1 { font-size: 14px; }
+  .admin-header .admin-menu-toggle { width: 34px; height: 34px; }
+}

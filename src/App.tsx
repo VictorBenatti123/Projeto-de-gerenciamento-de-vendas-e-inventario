@@ -210,12 +210,21 @@ function AdminSearch({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
 }
 
 // ─── Admin Header ─────────────────────────────────────────────────────────────
-function AdminHeader({ activeView, onNavigate }: { activeView: ViewId; onNavigate: (v: ViewId) => void }) {
+function AdminHeader({ activeView, onNavigate, onToggleSidebar }: { activeView: ViewId; onNavigate: (v: ViewId) => void; onToggleSidebar: () => void }) {
   const { user, logout } = useAuth();
   const [userOpen, setUserOpen] = useState(false);
 
   return (
-    <header className="h-14 flex items-center gap-4 px-6 bg-white border-b border-slate-200 shrink-0">
+    <header className="admin-header h-14 flex items-center gap-4 px-6 bg-white border-b border-slate-200 shrink-0">
+      <button
+        type="button"
+        onClick={onToggleSidebar}
+        aria-label="Mostrar ou ocultar menu lateral"
+        aria-controls="admin-sidebar"
+        className="admin-menu-toggle w-9 h-9 shrink-0 flex items-center justify-center border border-slate-200 text-slate-600 hover:bg-slate-50"
+      >
+        <span className="text-xl leading-none" aria-hidden="true">☰</span>
+      </button>
       <h1 className="text-lg font-bold text-slate-800 w-40 shrink-0">{viewTitles[activeView] ?? 'Admin'}</h1>
       <AdminSearch onNavigate={onNavigate} />
       <div className="flex-1" />
@@ -271,13 +280,30 @@ function renderAdminView(
 function AdminApp() {
   const [activeView, setActiveView] = useState<ViewId>('dashboard');
   const [configuracoes, setConfiguracoes] = useState(configuracoesIniciais);
+  const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 768);
+
+  const navigateAdmin = (view: ViewId) => {
+    setActiveView(view);
+    if (window.innerWidth < 768) setSidebarOpen(false);
+  };
+
   return (
-    <div className="flex h-screen bg-slate-100 overflow-hidden">
-      <Sidebar activeView={activeView} onNavigate={setActiveView} />
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <AdminHeader activeView={activeView} onNavigate={setActiveView} />
-        <main className="flex-1 overflow-y-auto">
-          {renderAdminView(activeView, setActiveView, configuracoes, setConfiguracoes)}
+    <div className="admin-shell flex h-screen bg-slate-100 overflow-hidden">
+      {sidebarOpen && window.innerWidth < 768 && (
+        <button
+          type="button"
+          aria-label="Fechar menu lateral"
+          className="admin-sidebar-backdrop fixed inset-0 z-40 bg-slate-950/55"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      <div id="admin-sidebar" className="admin-sidebar" data-open={sidebarOpen}>
+        <Sidebar activeView={activeView} onNavigate={navigateAdmin} />
+      </div>
+      <div className="admin-workspace flex-1 min-w-0 flex flex-col overflow-hidden">
+        <AdminHeader activeView={activeView} onNavigate={navigateAdmin} onToggleSidebar={() => setSidebarOpen((open) => !open)} />
+        <main className="admin-content flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
+          {renderAdminView(activeView, navigateAdmin, configuracoes, setConfiguracoes)}
         </main>
       </div>
     </div>

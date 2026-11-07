@@ -55,7 +55,7 @@ export default function Sidebar({ activeView, onNavigate }: Props) {
   ];
 
   return (
-    <aside className="w-[220px] flex-shrink-0 flex flex-col overflow-y-auto bg-[#12151f]">
+    <aside className="h-full w-full flex-shrink-0 flex flex-col overflow-y-auto bg-[#12151f]">
       <div className="flex items-center gap-2.5 px-4 py-4 border-b border-white/5">
         <img src={`${import.meta.env.BASE_URL}slm-logo.png`} alt="SLM Bikes & Parts" className="h-10 w-10 object-contain shrink-0" />
         <div className="min-w-0">
