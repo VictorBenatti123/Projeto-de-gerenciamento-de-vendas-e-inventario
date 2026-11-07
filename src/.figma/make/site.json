@@ -1,0 +1,10 @@
+
+{
+  "description": "SLM Bikes & Parts",
+  "robots": {
+    "index": false
+  },
+  "accessibility": {
+    "addBypassLinks": false
+  }
+}
