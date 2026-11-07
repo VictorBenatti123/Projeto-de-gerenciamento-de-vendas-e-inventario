@@ -50,7 +50,7 @@ export default function LoginPage({ onBack }: { onBack: () => void }) {
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <img src="/slm-logo.png" alt="SLM Bikes & Parts" className="w-14 h-14 object-contain" />
+            <img src={`${import.meta.env.BASE_URL}slm-logo.png`} alt="SLM Bikes & Parts" className="w-14 h-14 object-contain" />
             <div>
               <div className="text-white text-xl font-bold">SLM Bikes & Parts</div>
               <div className="text-slate-300 text-xs tracking-widest uppercase">Acesso ao sistema</div>
@@ -89,7 +89,7 @@ export default function LoginPage({ onBack }: { onBack: () => void }) {
 
           {/* Mobile logo */}
           <div className="flex items-center gap-2 mb-8 lg:hidden">
-            <img src="/slm-logo.png" alt="SLM Bikes & Parts" className="w-10 h-10 object-contain" />
+            <img src={`${import.meta.env.BASE_URL}slm-logo.png`} alt="SLM Bikes & Parts" className="w-10 h-10 object-contain" />
             <span className="text-lg font-bold text-slate-800">SLM Bikes & Parts</span>
           </div>
 

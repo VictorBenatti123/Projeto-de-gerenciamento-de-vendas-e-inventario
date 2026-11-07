@@ -330,7 +330,7 @@ function ClientApp({ onLogin }: { onLogin: () => void }) {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-8">
               <div>
                 <div className="flex items-center gap-2 mb-3">
-                  <img src="/slm-logo.png" alt="SLM Bikes & Parts" className="w-9 h-9 object-contain" />
+                  <img src={`${import.meta.env.BASE_URL}slm-logo.png`} alt="SLM Bikes & Parts" className="w-9 h-9 object-contain" />
                   <span className="text-white font-bold">SLM Bikes & Parts</span>
                 </div>
                 <p className="text-sm leading-relaxed">Sua loja completa de bikes e acessórios. Qualidade e expertise desde 2015.</p>

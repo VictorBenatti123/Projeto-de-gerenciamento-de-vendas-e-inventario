@@ -47,7 +47,7 @@ export default function ClientNav({ currentPage, onNavigate, onLogin }: Props) {
             onClick={() => onNavigate('vitrine')}
             className="flex items-center gap-2.5 shrink-0"
           >
-            <img src="/slm-logo.png" alt="SLM Bikes & Parts" className="h-11 w-11 object-contain" />
+            <img src={`${import.meta.env.BASE_URL}slm-logo.png`} alt="SLM Bikes & Parts" className="h-11 w-11 object-contain" />
             <div className="text-left">
               <span className="block text-slate-900 font-bold text-[15px] leading-tight">SLM Bikes & Parts</span>
               <span className="block text-slate-500 text-[10px] tracking-[0.16em] uppercase leading-tight">Peças • Acessórios • Oficina</span>
