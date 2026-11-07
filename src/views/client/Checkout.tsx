@@ -1,0 +1,368 @@
+import { useState } from 'react';
+import { useCart } from '../../context/CartContext';
+import { useAuth } from '../../context/AuthContext';
+import { usePedidos } from '../../context/PedidosContext';
+import {
+  formatCardExpiry,
+  formatCardNumber,
+  formatCep,
+  formatCpf,
+  formatCvv,
+  formatPhone,
+} from '../../utils/masks';
+
+interface Props {
+  onBack: () => void;
+  onSuccess: () => void;
+}
+
+type PaymentMethod = 'cartao' | 'pix' | 'boleto';
+
+export default function Checkout({ onBack, onSuccess }: Props) {
+  const { items, total, clearCart } = useCart();
+  const { user } = useAuth();
+  const { adicionarPedido } = usePedidos();
+  const [payMethod, setPayMethod] = useState<PaymentMethod>('cartao');
+  const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState<'form' | 'success'>('form');
+
+  // Form state
+  const [form, setForm] = useState({
+    name: user?.name ?? '',
+    email: user?.email ?? '',
+    phone: '',
+    cpf: '',
+    cep: '',
+    address: '',
+    number: '',
+    complement: '',
+    district: '',
+    city: '',
+    state: 'SP',
+    cardName: '',
+    cardNumber: '',
+    cardExpiry: '',
+    cardCVV: '',
+  });
+
+  const set = (field: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
+    setForm((f) => ({ ...f, [field]: e.target.value }));
+
+  const setMasked =
+    (field: keyof typeof form, formatter: (value: string) => string) =>
+    (e: React.ChangeEvent<HTMLInputElement>) =>
+      setForm((current) => ({ ...current, [field]: formatter(e.target.value) }));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    await new Promise((r) => setTimeout(r, 1500));
+    const orderTotal = payMethod === 'pix' ? total * 0.95 : total;
+    adicionarPedido({
+      clienteId: user?.id,
+      cliente: form.name.trim(),
+      email: form.email.trim(),
+      total: orderTotal,
+      status: payMethod === 'boleto' ? 'processando' : 'pago',
+      data: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }),
+      itens: items.map(({ produto, quantidade }) => `${quantidade}x ${produto.nome}`),
+      origem: 'site',
+      formaPagamento: payMethod,
+      finalCartao: payMethod === 'cartao' ? form.cardNumber.replace(/\D/g, '').slice(-4) : undefined,
+    });
+    setLoading(false);
+    clearCart();
+    onSuccess();
+  };
+
+  if (items.length === 0 && step !== 'success') {
+    return (
+      <div className="max-w-7xl mx-auto px-6 py-20 text-center">
+        <div className="text-xs font-semibold uppercase tracking-widest text-slate-400 mb-4">Carrinho</div>
+        <div className="text-lg font-medium text-slate-700 mb-4">Seu carrinho está vazio</div>
+        <button onClick={onBack} className="px-6 py-3 bg-blue-600 text-white rounded-xl font-semibold hover:bg-blue-700 transition-colors text-sm">
+          ← Continuar Comprando
+        </button>
+      </div>
+    );
+  }
+
+  const inputClass = 'w-full px-4 py-3 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all';
+  const labelClass = 'block text-sm font-medium text-slate-700 mb-1.5';
+
+  return (
+    <div className="max-w-7xl mx-auto px-6 py-8">
+      {/* Back */}
+      <button onClick={onBack} className="flex items-center gap-1.5 text-sm text-slate-500 hover:text-blue-600 transition-colors mb-6">
+        ← Continuar Comprando
+      </button>
+
+      <h1 className="text-2xl font-bold text-slate-900 mb-8">Finalizar Pedido</h1>
+
+      <form onSubmit={handleSubmit}>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left: forms */}
+          <div className="lg:col-span-2 space-y-8">
+            {/* Personal info */}
+            <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+              <h2 className="text-base font-bold text-slate-900 mb-5 flex items-center gap-2">
+                <span className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">1</span>
+                Dados Pessoais
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="sm:col-span-2">
+                  <label className={labelClass}>Nome completo</label>
+                  <input required maxLength={100} value={form.name} onChange={set('name')} placeholder="Seu nome" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>E-mail</label>
+                  <input required type="email" maxLength={120} value={form.email} onChange={set('email')} placeholder="seu@email.com" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Telefone</label>
+                  <input
+                    required
+                    inputMode="numeric"
+                    maxLength={15}
+                    pattern="\(\d{2}\) \d{4,5}-\d{4}"
+                    value={form.phone}
+                    onChange={setMasked('phone', formatPhone)}
+                    placeholder="(11) 99999-9999"
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>CPF</label>
+                  <input
+                    required
+                    inputMode="numeric"
+                    maxLength={14}
+                    pattern="\d{3}\.\d{3}\.\d{3}-\d{2}"
+                    value={form.cpf}
+                    onChange={setMasked('cpf', formatCpf)}
+                    placeholder="000.000.000-00"
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Delivery */}
+            <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+              <h2 className="text-base font-bold text-slate-900 mb-5 flex items-center gap-2">
+                <span className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">2</span>
+                Endereço de Entrega
+              </h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className={labelClass}>CEP</label>
+                  <input
+                    required
+                    inputMode="numeric"
+                    maxLength={9}
+                    pattern="\d{5}-\d{3}"
+                    value={form.cep}
+                    onChange={setMasked('cep', formatCep)}
+                    placeholder="00000-000"
+                    className={inputClass}
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className={labelClass}>Endereço</label>
+                  <input required maxLength={120} value={form.address} onChange={set('address')} placeholder="Rua, Avenida..." className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Número</label>
+                  <input required maxLength={10} value={form.number} onChange={set('number')} placeholder="123" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Complemento</label>
+                  <input maxLength={60} value={form.complement} onChange={set('complement')} placeholder="Apto, Bloco..." className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Bairro</label>
+                  <input required maxLength={60} value={form.district} onChange={set('district')} placeholder="Bairro" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Cidade</label>
+                  <input required maxLength={60} value={form.city} onChange={set('city')} placeholder="Cidade" className={inputClass} />
+                </div>
+                <div>
+                  <label className={labelClass}>Estado</label>
+                  <select value={form.state} onChange={set('state')} className={inputClass}>
+                    {['SP','RJ','MG','RS','PR','SC','BA','GO','DF','PE','CE','AM','PA','ES','RN','PB','AL','PI','MA','MT','MS','RO','AC','AP','RR','SE','TO'].map(s => (
+                      <option key={s}>{s}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Payment */}
+            <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm">
+              <h2 className="text-base font-bold text-slate-900 mb-5 flex items-center gap-2">
+                <span className="w-6 h-6 bg-blue-600 text-white rounded-full flex items-center justify-center text-xs font-bold">3</span>
+                Pagamento
+              </h2>
+
+              {/* Payment method tabs */}
+              <div className="flex gap-2 mb-6">
+                {([['cartao', '💳 Cartão'], ['pix', 'PIX'], ['boleto', 'Boleto']] as [PaymentMethod, string][]).map(([m, l]) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setPayMethod(m)}
+                    className={`flex-1 py-2.5 rounded-xl text-sm font-semibold border transition-all ${
+                      payMethod === m
+                        ? 'bg-blue-600 text-white border-blue-600'
+                        : 'border-slate-200 text-slate-600 hover:border-blue-300'
+                    }`}
+                  >
+                    {l}
+                  </button>
+                ))}
+              </div>
+
+              {payMethod === 'cartao' && (
+                <div className="space-y-4">
+                  <div>
+                    <label className={labelClass}>Nome no cartão</label>
+                    <input maxLength={100} value={form.cardName} onChange={set('cardName')} placeholder="Como impresso no cartão" className={inputClass} required={payMethod === 'cartao'} />
+                  </div>
+                  <div>
+                    <label className={labelClass}>Número do cartão</label>
+                    <input
+                      inputMode="numeric"
+                      maxLength={19}
+                      pattern="\d{4} \d{4} \d{4} \d{4}"
+                      value={form.cardNumber}
+                      onChange={setMasked('cardNumber', formatCardNumber)}
+                      placeholder="0000 0000 0000 0000"
+                      className={inputClass}
+                      required={payMethod === 'cartao'}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className={labelClass}>Validade</label>
+                      <input
+                        inputMode="numeric"
+                        maxLength={5}
+                        pattern="(0[1-9]|1[0-2])\/\d{2}"
+                        value={form.cardExpiry}
+                        onChange={setMasked('cardExpiry', formatCardExpiry)}
+                        placeholder="MM/AA"
+                        className={inputClass}
+                        required={payMethod === 'cartao'}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelClass}>CVV</label>
+                      <input
+                        inputMode="numeric"
+                        maxLength={4}
+                        minLength={3}
+                        pattern="\d{3,4}"
+                        value={form.cardCVV}
+                        onChange={setMasked('cardCVV', formatCvv)}
+                        placeholder="123"
+                        className={inputClass}
+                        required={payMethod === 'cartao'}
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelClass}>Parcelamento</label>
+                    <select className={inputClass}>
+                      {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
+                        <option key={n} value={n}>
+                          {n}x de R${(total / n).toFixed(2).replace('.', ',')} {n === 1 ? '(à vista)' : 'sem juros'}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {payMethod === 'pix' && (
+                <div className="flex flex-col items-center py-6 text-center">
+                  <div className="w-36 h-36 bg-slate-100 rounded-2xl flex items-center justify-center text-6xl mb-4">📱</div>
+                  <div className="text-lg font-bold text-slate-900 mb-1">R${(total * 0.95).toFixed(2).replace('.', ',')} via PIX</div>
+                  <div className="text-sm text-emerald-600 font-medium mb-3">5% de desconto aplicado!</div>
+                  <div className="text-xs text-slate-400 max-w-xs">O QR Code será gerado após a confirmação do pedido. O pagamento é processado em instantes.</div>
+                </div>
+              )}
+
+              {payMethod === 'boleto' && (
+                <div className="flex flex-col items-center py-6 text-center">
+                  <div className="text-5xl mb-4">📄</div>
+                  <div className="text-lg font-bold text-slate-900 mb-1">Boleto Bancário</div>
+                  <div className="text-sm text-slate-500">Vencimento em 3 dias úteis</div>
+                  <div className="text-xs text-slate-400 mt-2 max-w-xs">O boleto será enviado para seu e-mail após a confirmação do pedido.</div>
+                </div>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 disabled:opacity-60 transition-all text-base"
+            >
+              {loading ? 'Processando pedido...' : `✓ Confirmar Pedido · R$${total.toFixed(2).replace('.', ',')}`}
+            </button>
+          </div>
+
+          {/* Right: order summary */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-2xl border border-slate-100 p-6 shadow-sm sticky top-24">
+              <h3 className="text-base font-bold text-slate-900 mb-4">Resumo do Pedido</h3>
+              <div className="space-y-3 mb-5">
+                {items.map(({ produto, quantidade }) => (
+                  <div key={produto.id} className="flex gap-3">
+                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-slate-100 shrink-0">
+                      <img src={produto.imagem} alt={produto.nome} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-xs font-medium text-slate-700 leading-snug truncate">{produto.nome}</div>
+                      <div className="text-xs text-slate-400">Qtd: {quantidade}</div>
+                    </div>
+                    <div className="text-sm font-semibold text-slate-800 shrink-0">
+                      R${(produto.preco * quantidade).toFixed(2).replace('.', ',')}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="space-y-2 pt-4 border-t border-slate-100">
+                <div className="flex justify-between text-sm text-slate-600">
+                  <span>Subtotal ({items.reduce((s, i) => s + i.quantidade, 0)} itens)</span>
+                  <span>R${total.toFixed(2).replace('.', ',')}</span>
+                </div>
+                <div className="flex justify-between text-sm text-slate-600">
+                  <span>Frete</span>
+                  <span className="text-emerald-600 font-medium">Grátis</span>
+                </div>
+                {payMethod === 'pix' && (
+                  <div className="flex justify-between text-sm text-emerald-600 font-medium">
+                    <span>Desconto PIX (5%)</span>
+                    <span>- R${(total * 0.05).toFixed(2).replace('.', ',')}</span>
+                  </div>
+                )}
+                <div className="flex justify-between text-base font-bold text-slate-900 pt-2 border-t border-slate-100">
+                  <span>Total</span>
+                  <span>R${(payMethod === 'pix' ? total * 0.95 : total).toFixed(2).replace('.', ',')}</span>
+                </div>
+              </div>
+
+              {/* Trust badges */}
+              <div className="mt-5 pt-4 border-t border-slate-100 space-y-2">
+                {['Compra segura', 'Entrega', 'Devolução em até 30 dias'].map((b) => (
+                  <div key={b} className="text-xs text-slate-500">{b}</div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  );
+}

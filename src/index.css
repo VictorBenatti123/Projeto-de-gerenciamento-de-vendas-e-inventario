@@ -1,0 +1,57 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import 'tailwindcss';
+
+@theme inline {
+  --font-sans: 'Inter', sans-serif;
+  --radius-lg: 0.35rem;
+  --radius-xl: 0.45rem;
+  --radius-2xl: 0.55rem;
+  --radius-3xl: 0.7rem;
+}
+
+:root {
+  font-family: 'Inter', sans-serif;
+  color: #182536;
+  background: #f5f6f7;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background: #f5f6f7;
+}
+
+/* SLM identity: navy, warm yellow and restrained orange. */
+.bg-blue-600 { background-color: #082b5c !important; }
+.bg-blue-700 { background-color: #061f43 !important; }
+.bg-blue-50 { background-color: #edf2f8 !important; }
+.text-blue-600 { color: #082b5c !important; }
+.text-blue-700 { color: #0a356d !important; }
+.text-blue-500 { color: #24558a !important; }
+.border-blue-600 { border-color: #082b5c !important; }
+.border-blue-400 { border-color: #7893b4 !important; }
+.hover\:bg-blue-700:hover { background-color: #061f43 !important; }
+.hover\:text-blue-600:hover { color: #082b5c !important; }
+.focus\:border-blue-400:focus { border-color: #7893b4 !important; }
+.focus\:ring-blue-100:focus { --tw-ring-color: #e5ebf2 !important; }
+
+/* More restrained geometry and surfaces throughout the application. */
+.rounded-lg { border-radius: 5px !important; }
+.rounded-xl { border-radius: 6px !important; }
+.rounded-2xl { border-radius: 7px !important; }
+.rounded-3xl { border-radius: 9px !important; }
+.shadow-sm { box-shadow: 0 1px 2px rgb(16 35 58 / 5%) !important; }
+
+button, input, select, textarea { font: inherit; }
+button { cursor: pointer; }
+button:disabled { cursor: not-allowed; }
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd2da; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #9ba7b5; }
+
+::selection { background: #f5d51d; color: #082b5c; }
