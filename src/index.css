@@ -92,14 +92,76 @@ button:disabled { cursor: not-allowed; }
     box-shadow: 12px 0 30px rgb(0 0 0 / 18%);
   }
   .admin-sidebar[data-open="true"] { transform: translateX(0); }
-  .admin-header { height: 56px; min-height: 56px; gap: 9px; padding-left: 12px; padding-right: 12px; }
-  .admin-header h1 { width: auto; min-width: 0; flex: 0 1 auto; font-size: 15px; white-space: nowrap; }
-  .admin-header > div.flex-1:not(.relative) { display: none; }
-  .admin-header > div.relative { flex-shrink: 0; }
-  .admin-header .max-w-sm { max-width: none; min-width: 0; flex: 1 1 auto; }
-  .admin-header input { font-size: 12px; padding-top: 8px; padding-bottom: 8px; }
-  .admin-header input::placeholder { color: transparent; }
-  .admin-header .relative > button { width: 34px; height: 34px; }
+
+  /* Header becomes two explicit rows: controls above, search below. */
+  .admin-header {
+    box-sizing: border-box;
+    display: grid !important;
+    grid-template-columns: 40px minmax(0, 1fr) 40px auto;
+    grid-template-areas:
+      "menu title notifications user"
+      "search search search search";
+    align-items: center;
+    column-gap: 9px;
+    row-gap: 9px;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 10px 12px 11px !important;
+    flex: 0 0 auto;
+    overflow: visible;
+    position: relative;
+    z-index: 20;
+  }
+  .admin-header .admin-menu-toggle { grid-area: menu; width: 40px; height: 40px; }
+  .admin-header h1 {
+    grid-area: title;
+    width: auto;
+    min-width: 0;
+    max-width: 100%;
+    font-size: 15px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .admin-header .admin-search {
+    grid-area: search;
+    display: block;
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+  }
+  .admin-header .admin-search input {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 40px;
+    padding: 9px 12px 9px 34px;
+    font-size: 13px;
+  }
+  .admin-header .admin-search input::placeholder { color: #94a3b8; }
+  .admin-header .admin-header-spacer { display: none; }
+  .admin-header .admin-notifications { grid-area: notifications; min-width: 40px; }
+  .admin-header .admin-notifications > button { width: 40px; height: 40px; }
+  .admin-header .admin-user-menu { grid-area: user; min-width: 32px; justify-self: end; }
+  .admin-header .admin-user-menu > button {
+    width: auto !important;
+    min-width: 32px;
+    height: 40px;
+    max-width: 64px;
+    padding: 4px !important;
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+  }
+  .admin-header .admin-user-menu > button > div:first-child {
+    width: 30px;
+    height: 30px;
+    min-width: 30px;
+    flex: 0 0 30px;
+  }
+  .admin-header .admin-user-menu > button > span { display: none; }
+  .admin-header .relative > button { max-width: 100%; }
+
   .admin-content { -webkit-overflow-scrolling: touch; }
   .admin-content > div { max-width: 100%; }
   .admin-content .grid { grid-template-columns: repeat(1, minmax(0, 1fr)); }
@@ -112,7 +174,14 @@ button:disabled { cursor: not-allowed; }
 }
 
 @media (max-width: 380px) {
-  .admin-header { gap: 7px; }
+  .admin-header {
+    grid-template-columns: 36px minmax(0, 1fr) 36px 32px;
+    column-gap: 7px;
+    padding-left: 9px !important;
+    padding-right: 9px !important;
+  }
+  .admin-header .admin-menu-toggle,
+  .admin-header .admin-notifications > button { width: 36px; height: 36px; }
   .admin-header h1 { font-size: 14px; }
-  .admin-header .admin-menu-toggle { width: 34px; height: 34px; }
+  .admin-header .admin-user-menu > button { min-width: 30px; }
 }

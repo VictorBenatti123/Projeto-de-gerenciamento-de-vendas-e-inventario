@@ -78,7 +78,7 @@ function NotificationBell({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
   ];
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="admin-notifications relative" ref={ref}>
       <button
         onClick={() => setOpen((o) => !o)}
         className="relative w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
@@ -166,7 +166,7 @@ function AdminSearch({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
   const hasResults = matchedProdutos.length > 0;
 
   return (
-    <div className="flex-1 relative max-w-sm" ref={ref}>
+    <div className="admin-search flex-1 relative max-w-sm" ref={ref}>
       <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs z-10">🔍</span>
       <input
         ref={inputRef}
@@ -227,10 +227,10 @@ function AdminHeader({ activeView, onNavigate, onToggleSidebar }: { activeView: 
       </button>
       <h1 className="text-lg font-bold text-slate-800 w-40 shrink-0">{viewTitles[activeView] ?? 'Admin'}</h1>
       <AdminSearch onNavigate={onNavigate} />
-      <div className="flex-1" />
+      <div className="admin-header-spacer flex-1" />
       <NotificationBell onNavigate={onNavigate} />
       {/* User */}
-      <div className="relative">
+      <div className="admin-user-menu relative">
         <button onClick={() => setUserOpen((o) => !o)} className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-slate-50 transition-colors">
           <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">{user?.name.charAt(0)}</div>
           <span className="text-xs text-slate-400">▾</span>
