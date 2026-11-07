@@ -21,9 +21,9 @@ export interface ConfiguracoesData {
 
 export const configuracoesIniciais: ConfiguracoesData = {
   nomeLoja: 'SLM Bikes & Parts',
-  email: 'contato@cycleparts.com',
-  telefone: '(11) 3456-7890',
-  endereco: 'Av. Paulista, 1234 – São Paulo, SP',
+  email: 'slmbikes@gmail.com.br',
+  telefone: '(11) 2425-4197',
+  endereco: 'R. Cabo Antônio Pereira da Silva, 879 - Jardim Tranquilidade, Guarulhos - SP, 07051-011',
   moeda: 'BRL',
   fusoHorario: 'America/Sao_Paulo',
   estoqueMinimoPadrao: 5,

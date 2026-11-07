@@ -17,7 +17,7 @@ interface AuthContextValue {
 const ADMIN_CODE = 'ADMIN2026';
 
 const mockUsers: (User & { password: string })[] = [
-  { id: '1', name: 'Administrador SLM', email: 'admin@cycleparts.com', password: 'admin123', role: 'admin' },
+  { id: '1', name: 'Administrador SLM', email: 'slmbikes@gmail.com.br', password: 'admin123', role: 'admin' },
   { id: '2', name: 'João Cliente', email: 'joao@email.com', password: '123456', role: 'customer' },
 ];
 

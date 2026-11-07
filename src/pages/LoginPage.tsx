@@ -163,11 +163,11 @@ export default function LoginPage({ onBack }: { onBack: () => void }) {
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <button
                   type="button"
-                  onClick={() => { setLoginEmail('admin@cycleparts.com'); setLoginPass('admin123'); }}
+                  onClick={() => { setLoginEmail('slmbikes@gmail.com.br'); setLoginPass('admin123'); }}
                   className="p-3 border border-slate-200 rounded-xl text-left hover:bg-slate-50 transition-colors"
                 >
                   <div className="font-semibold text-slate-800 mb-0.5">👨‍💼 Admin</div>
-                  <div className="text-slate-400">admin@cycleparts.com</div>
+                  <div className="text-slate-400">slmbikes@gmail.com.br</div>
                 </button>
                 <button
                   type="button"

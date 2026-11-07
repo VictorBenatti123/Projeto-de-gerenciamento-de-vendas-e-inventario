@@ -333,7 +333,7 @@ function ClientApp({ onLogin }: { onLogin: () => void }) {
                   <img src={`${import.meta.env.BASE_URL}slm-logo.png`} alt="SLM Bikes & Parts" className="w-9 h-9 object-contain" />
                   <span className="text-white font-bold">SLM Bikes & Parts</span>
                 </div>
-                <p className="text-sm leading-relaxed">Sua loja completa de bikes e acessórios. Qualidade e expertise desde 2015.</p>
+                <p className="text-sm leading-relaxed">Bicicletas, peças, acessórios e oficina especializada em Guarulhos.</p>
               </div>
               <div>
                 <div className="text-white font-semibold text-sm mb-3">Navegação</div>
@@ -346,9 +346,9 @@ function ClientApp({ onLogin }: { onLogin: () => void }) {
               <div>
                 <div className="text-white font-semibold text-sm mb-3">Contato</div>
                 <div className="space-y-2 text-sm">
-                  <div>Av. Paulista, 1234 – São Paulo, SP</div>
-                  <div>(11) 3456-7890</div>
-                  <div>contato@cycleparts.com</div>
+                  <div>R. Cabo Antônio Pereira da Silva, 879 — Jardim Tranquilidade, Guarulhos/SP</div>
+                  <div><a href="tel:+551124254197" className="hover:text-white">(11) 2425-4197</a></div>
+                  <div><a href="mailto:slmbikes@gmail.com.br" className="hover:text-white">slmbikes@gmail.com.br</a></div>
                 </div>
               </div>
             </div>

@@ -101,7 +101,7 @@ export default function Sidebar({ activeView, onNavigate }: Props) {
           <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold shrink-0">A</div>
           <div className="flex-1 min-w-0">
             <div className="text-slate-300 text-[12px] font-medium truncate">Admin</div>
-            <div className="text-slate-600 text-[10px] truncate">admin@cycleparts.com</div>
+            <div className="text-slate-600 text-[10px] truncate">slmbikes@gmail.com.br</div>
           </div>
         </div>
       </div>
