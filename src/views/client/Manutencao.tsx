@@ -72,9 +72,9 @@ export default function Manutencao() {
   const confirmarPagamentoDemo = async () => {
     if (!servicoSelecionado || !selectedDate || !selectedTime) return;
     if (paymentMethod === 'cartao') {
-      const numeroValido = /^\\d{4} \\d{4} \\d{4} \\d{4}$/.test(cardForm.number);
-      const validadeValida = /^(0[1-9]|1[0-2])\\/\\d{2}$/.test(cardForm.expiry);
-      const cvvValido = /^\\d{3,4}$/.test(cardForm.cvv);
+      const numeroValido = /^\d{4} \d{4} \d{4} \d{4}$/.test(cardForm.number);
+      const validadeValida = /^(0[1-9]|1[0-2])\/\d{2}$/.test(cardForm.expiry);
+      const cvvValido = /^\d{3,4}$/.test(cardForm.cvv);
       if (!cardForm.name.trim() || !numeroValido || !validadeValida || !cvvValido) {
         window.alert('Preencha corretamente o nome, número, validade e código de segurança do cartão.');
         return;
