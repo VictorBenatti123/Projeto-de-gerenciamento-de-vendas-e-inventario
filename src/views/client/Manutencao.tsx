@@ -48,9 +48,11 @@ export default function Manutencao() {
     if (window.confirm('Deseja cancelar este agendamento?')) removerAgendamento(id);
   };
 
-  const handleContinueToPayment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedServico || !selectedDate || !selectedTime) return;
+  const handleContinueToPayment = () => {
+    if (!selectedServico || !selectedDate || !selectedTime) {
+      window.alert('Selecione um serviço, uma data e um horário antes de continuar.');
+      return;
+    }
     if (!horarioDisponivel(selectedDate, selectedTime, servicoSelecionado?.label ?? selectedServico)) {
       window.alert('Este horário acabou de ser reservado. Escolha outro horário.');
       setSelectedTime('');
@@ -247,7 +249,7 @@ export default function Manutencao() {
       )}
 
       <div className="max-w-4xl mx-auto px-6 py-10">
-        <form onSubmit={handleContinueToPayment} className="space-y-8">
+        <div className="space-y-8">
           {/* Service selection */}
           <div>
             <h2 className="text-lg font-bold text-slate-900 mb-4">1. Escolha o serviço</h2>
@@ -374,13 +376,14 @@ export default function Manutencao() {
           )}
 
           <button
-            type="submit"
-            disabled={!selectedServico || !selectedDate || !selectedTime || loading}
+            type="button"
+            onClick={handleContinueToPayment}
+            disabled={loading}
             className="w-full py-4 bg-blue-600 text-white font-bold rounded-2xl hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-base"
           >
             Continuar para pagamento · 20% de adiantamento
           </button>
-        </form>
+        </div>
       </div>
     </div>
   );
