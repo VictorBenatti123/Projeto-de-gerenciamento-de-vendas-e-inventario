@@ -29,7 +29,13 @@ const contactItems = [
   },
   {
     label: 'Horário de funcionamento',
-    content: <div>Sábado: 9h às 16h</div>,
+    content: (
+      <div className="space-y-2 text-sm">
+        <div className="flex justify-between gap-4"><span>Segunda a sexta</span><span className="font-medium whitespace-nowrap">09:00–19:00</span></div>
+        <div className="flex justify-between gap-4"><span>Sábado</span><span className="font-medium whitespace-nowrap">09:00–16:00</span></div>
+        <div className="flex justify-between gap-4"><span>Domingo</span><span className="font-medium whitespace-nowrap">Fechado</span></div>
+      </div>
+    ),
   },
 ];
 
