@@ -165,9 +165,7 @@ export default function Manutencao() {
                         <p className="text-xs text-slate-500">Adiantamento de {adiantamento.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</p>
                       </div>
                     </div>
-                    <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
-                      Ambiente de demonstração. Não informe dados reais do cartão.
-                    </div>
+                    <p className="mb-4 text-xs text-slate-400">Pagamento demonstrativo — nenhuma cobrança será processada.</p>
                     <div className="space-y-4">
                       <div>
                         <label className="mb-1.5 block text-sm font-medium text-slate-700">Nome no cartão</label>
