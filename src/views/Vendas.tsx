@@ -267,7 +267,7 @@ export default function Vendas() {
             </label>
             <label className="block text-xs font-semibold text-slate-600">
               Itens
-              <textarea name="itens" required rows={3} className={`${fieldClass} mt-1.5 resize-none`} placeholder="Separe os nomes/SKUs por vírgula. Ex.: 2x Pneu Maxxis Ardent 29\""
+              <textarea name="itens" required rows={3} className={`${fieldClass} mt-1.5 resize-none`} placeholder={'Separe por vírgula. Ex.: 2x Pneu Maxxis Ardent 29"'}
             </label>
             <div className="grid grid-cols-2 gap-4">
               <label className="text-xs font-semibold text-slate-600">
