@@ -1,6 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import type { Venda } from '../data';
 import { usePedidos, type Pedido } from '../context/PedidosContext';
+import { useProdutos } from '../context/ProdutosContext';
+import { readStoredValue } from '../utils/storage';
 import AdminModal, { fieldClass } from '../components/AdminModal';
 
 const statusStyles: Record<string, string> = {
@@ -13,10 +15,12 @@ const statusLabels: Record<string, string> = { pago: 'Pago', enviado: 'Enviado',
 
 export default function Vendas() {
   const { pedidos: items, adicionarPedido } = usePedidos();
+  const { produtos, registrarSaida } = useProdutos();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [selected, setSelected] = useState<Pedido | null>(null);
   const [creating, setCreating] = useState(false);
+  const [formError, setFormError] = useState('');
 
   const filtered = items.filter((v) => {
     const matchSearch = v.cliente.toLowerCase().includes(search.toLowerCase()) || String(v.id).includes(search);
@@ -32,14 +36,54 @@ export default function Vendas() {
   const handleCreate = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    const itens = String(form.get('itens')).split(',').map((item) => item.trim()).filter(Boolean);
+    const rawItems = String(form.get('itens')).split(',').map((item) => item.trim()).filter(Boolean);
+    const parsedItems = rawItems.map((raw) => {
+      const quantityMatch = raw.match(/^(\d+)\s*x\s*(.+)$/i);
+      const quantidade = quantityMatch ? Number(quantityMatch[1]) : 1;
+      const term = (quantityMatch ? quantityMatch[2] : raw).trim().toLocaleLowerCase('pt-BR');
+      const produto = produtos.find((candidate) =>
+        candidate.nome.toLocaleLowerCase('pt-BR') === term || candidate.sku.toLocaleLowerCase('pt-BR') === term
+      );
+      return { raw, quantidade, produto };
+    });
+    const missing = parsedItems.find((item) => !item.produto);
+    if (missing) {
+      setFormError(`Produto não encontrado no catálogo: "${missing.raw}". Cadastre o produto ou informe seu nome/SKU corretamente.`);
+      return;
+    }
+    if (parsedItems.some((item) => !Number.isInteger(item.quantidade) || item.quantidade <= 0)) {
+      setFormError('Informe quantidades inteiras positivas, por exemplo: 2x Pneu Maxxis Ardent 29\".');
+      return;
+    }
+    const matchedItems = parsedItems as { raw: string; quantidade: number; produto: (typeof produtos)[number] }[];
+    const settings = readStoredValue<{ permitirVendaSemEstoque?: boolean }>('slm.configuracoes.v1', {});
+    const stockResult = registrarSaida(
+      matchedItems.map(({ produto, quantidade }) => ({ produtoId: produto.id, quantidade })),
+      'Venda registrada no administrativo',
+      settings.permitirVendaSemEstoque === true
+    );
+    if (!stockResult.ok) {
+      setFormError(stockResult.error ?? 'Não foi possível atualizar o estoque.');
+      return;
+    }
+    const itens = matchedItems.map(({ produto, quantidade }) => `${quantidade}x ${produto.nome}`);
+    const itensDetalhados = matchedItems.map(({ produto, quantidade }) => ({
+      produtoId: produto.id,
+      sku: produto.sku,
+      nome: produto.nome,
+      categoria: produto.categoria,
+      quantidade,
+      precoUnitario: produto.preco,
+    }));
     const now = new Date();
+    setFormError('');
     adicionarPedido({
       cliente: String(form.get('cliente')).trim(),
       total: Number(form.get('total')),
       status: String(form.get('status')) as Venda['status'],
       data: now.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }),
       itens,
+      itensDetalhados,
       origem: 'admin',
       formaPagamento: 'outro',
     });
@@ -205,13 +249,14 @@ export default function Vendas() {
       {creating && (
         <AdminModal title="Nova venda" subtitle="Registre uma venda realizada fora do checkout online." onClose={() => setCreating(false)}>
           <form onSubmit={handleCreate} className="space-y-4 p-6">
+            {formError && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">{formError}</div>}
             <label className="block text-xs font-semibold text-slate-600">
               Cliente
               <input name="cliente" required autoFocus className={`${fieldClass} mt-1.5`} placeholder="Nome do cliente" />
             </label>
             <label className="block text-xs font-semibold text-slate-600">
               Itens
-              <textarea name="itens" required rows={3} className={`${fieldClass} mt-1.5 resize-none`} placeholder="Separe os produtos por vírgula" />
+              <textarea name="itens" required rows={3} className={`${fieldClass} mt-1.5 resize-none`} placeholder="Separe os nomes/SKUs por vírgula. Ex.: 2x Pneu Maxxis Ardent 29\""
             </label>
             <div className="grid grid-cols-2 gap-4">
               <label className="text-xs font-semibold text-slate-600">
