@@ -91,9 +91,7 @@ export default function Manutencao() {
     setSuccess(true);
   };
 
-  if (success) {
-    const servico = servicos.find((s) => s.id === selectedServico);
-    if (paymentStep && servicoSelecionado) {
+  if (paymentStep && servicoSelecionado) {
     const adiantamento = servicoSelecionado.valor * 0.2;
     const restante = servicoSelecionado.valor - adiantamento;
     return (
@@ -135,6 +133,9 @@ export default function Manutencao() {
       </div>
     );
   }
+
+  if (success) {
+    const servico = servicos.find((s) => s.id === selectedServico);
 
   return (
       <div className="max-w-2xl mx-auto px-6 py-16 text-center">
