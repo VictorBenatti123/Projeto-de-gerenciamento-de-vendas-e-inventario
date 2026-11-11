@@ -72,7 +72,8 @@ export default function Agenda() {
     const form = new FormData(event.currentTarget);
     const date = String(form.get('date'));
     const hora = String(form.get('hora'));
-    if (!horarioDisponivel(date, hora)) {
+    const servico = String(form.get('servico')).trim();
+    if (!horarioDisponivel(date, hora, servico)) {
       window.alert('Horário fora do expediente ou em conflito com outro serviço. Verifique a duração e escolha outro horário.');
       return;
     }

@@ -199,7 +199,7 @@ export default function Manutencao() {
                 <button
                   key={s.id}
                   type="button"
-                  onClick={() => setSelectedServico(s.id)}
+                  onClick={() => { setSelectedServico(s.id); setSelectedTime(''); }}
                   className={`p-4 rounded-xl border text-left transition-all ${
                     selectedServico === s.id
                       ? 'border-blue-500 bg-blue-50'
@@ -248,7 +248,8 @@ export default function Manutencao() {
 
           {/* Date & time */}
           <div>
-            <h2 className="text-lg font-bold text-slate-900 mb-2">3. Data e horário</h2>\n            <p className="mb-4 text-sm text-slate-500">Funcionamento: segunda a sexta, 09:00–19:00; sábado, 09:00–16:00; domingo, fechado. A duração do serviço é considerada na disponibilidade.</p>
+            <h2 className="text-lg font-bold text-slate-900 mb-2">3. Data e horário</h2>
+            <p className="mb-4 text-sm text-slate-500">Funcionamento: segunda a sexta, 09:00–19:00; sábado, 09:00–16:00; domingo, fechado. A duração do serviço é considerada na disponibilidade.</p>
             <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Data *</label>
