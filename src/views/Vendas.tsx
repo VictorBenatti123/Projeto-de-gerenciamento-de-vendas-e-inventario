@@ -264,7 +264,7 @@ export default function Vendas() {
             <div className="space-y-3 border-t border-slate-100 pt-4">
               <label className="block text-xs font-semibold text-slate-600">
                 Atualizar status do pedido
-                <select value={selected.status} onChange={(event) => {
+                <select value={selected.status} disabled={selected.status === 'cancelado'} onChange={(event) => {
                   const nextStatus = event.target.value as Venda['status'];
                   atualizarStatusPedido(selected.id, nextStatus);
                   setSelected({ ...selected, status: nextStatus });
