@@ -1,7 +1,17 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 import { vendas, type Venda } from '../data';
+import { usePersistentState } from '../utils/storage';
 
 export type FormaPagamento = 'cartao' | 'pix' | 'boleto' | 'outro';
+
+export interface ItemPedido {
+  produtoId: number;
+  sku: string;
+  nome: string;
+  categoria: string;
+  quantidade: number;
+  precoUnitario: number;
+}
 
 export interface Pedido extends Venda {
   clienteId?: string;
@@ -9,17 +19,17 @@ export interface Pedido extends Venda {
   origem: 'site' | 'admin';
   formaPagamento?: FormaPagamento;
   finalCartao?: string;
+  itensDetalhados?: ItemPedido[];
 }
 
 type NovoPedido = Omit<Pedido, 'id'>;
 
 interface PedidosContextValue {
   pedidos: Pedido[];
-  adicionarPedido: (pedido: NovoPedido) => void;
+  adicionarPedido: (pedido: NovoPedido) => Pedido;
 }
 
 const PedidosContext = createContext<PedidosContextValue | null>(null);
-
 const pedidosIniciais: Pedido[] = vendas.map((venda) => ({
   ...venda,
   origem: 'admin',
@@ -27,16 +37,15 @@ const pedidosIniciais: Pedido[] = vendas.map((venda) => ({
 }));
 
 export function PedidosProvider({ children }: { children: ReactNode }) {
-  const [pedidos, setPedidos] = useState(pedidosIniciais);
+  const [pedidos, setPedidos] = usePersistentState<Pedido[]>('slm.pedidos.v1', pedidosIniciais);
 
   const adicionarPedido = (pedido: NovoPedido) => {
-    setPedidos((current) => {
-      const novoPedido = {
-        ...pedido,
-        id: Math.max(0, ...current.map((item) => item.id)) + 1,
-      };
-      return [novoPedido, ...current];
-    });
+    const novoPedido: Pedido = {
+      ...pedido,
+      id: Math.max(0, ...pedidos.map((item) => item.id)) + 1,
+    };
+    setPedidos((current) => [novoPedido, ...current]);
+    return novoPedido;
   };
 
   return (

@@ -1,24 +1,26 @@
-import { createContext, useContext, useState, type ReactNode } from 'react';
+import { createContext, useContext, type ReactNode } from 'react';
 import type { Manutencao } from '../data';
 import { agendaInicial } from '../data/agenda';
+import { usePersistentState } from '../utils/storage';
 
 export interface AgendamentoManutencao extends Manutencao {
   date: string;
   observacoes?: string;
   origem: 'cliente' | 'admin';
+  clienteId?: string;
 }
 
 type NovoAgendamento = Omit<AgendamentoManutencao, 'id'>;
 
 interface ManutencoesContextValue {
   agendamentos: AgendamentoManutencao[];
-  adicionarAgendamento: (agendamento: NovoAgendamento) => void;
+  adicionarAgendamento: (agendamento: NovoAgendamento) => boolean;
   atualizarStatus: (id: number, status: Manutencao['status']) => void;
   removerAgendamento: (id: number) => void;
+  horarioDisponivel: (date: string, hora: string, ignorarId?: number) => boolean;
 }
 
 const ManutencoesContext = createContext<ManutencoesContextValue | null>(null);
-
 const initialData: AgendamentoManutencao[] = agendaInicial.map((agendamento) => ({
   ...agendamento,
   origem: 'admin',
@@ -29,29 +31,32 @@ function sortAgendamentos(items: AgendamentoManutencao[]) {
 }
 
 export function ManutencoesProvider({ children }: { children: ReactNode }) {
-  const [agendamentos, setAgendamentos] = useState(initialData);
+  const [agendamentos, setAgendamentos] = usePersistentState<AgendamentoManutencao[]>('slm.agendamentos.v1', initialData);
+
+  const horarioDisponivel = (date: string, hora: string, ignorarId?: number) =>
+    !agendamentos.some((item) =>
+      item.id !== ignorarId && item.date === date && item.hora === hora && item.status !== 'concluido'
+    );
 
   const adicionarAgendamento = (agendamento: NovoAgendamento) => {
-    setAgendamentos((current) => {
-      const id = Math.max(0, ...current.map((item) => item.id)) + 1;
-      return sortAgendamentos([...current, { ...agendamento, id }]);
-    });
+    if (!horarioDisponivel(agendamento.date, agendamento.hora)) return false;
+    const id = Math.max(0, ...agendamentos.map((item) => item.id)) + 1;
+    setAgendamentos((current) => sortAgendamentos([...current, { ...agendamento, id }]));
+    return true;
   };
 
   const atualizarStatus = (id: number, status: Manutencao['status']) => {
-    setAgendamentos((current) =>
-      current.map((agendamento) => (agendamento.id === id ? { ...agendamento, status } : agendamento))
-    );
+    setAgendamentos((current) => current.map((item) => item.id === id ? { ...item, status } : item));
   };
 
   const removerAgendamento = (id: number) => {
-    setAgendamentos((current) => current.filter((agendamento) => agendamento.id !== id));
+    setAgendamentos((current) => current.filter((item) => item.id !== id));
   };
 
   return (
-    <ManutencoesContext.Provider
-      value={{ agendamentos, adicionarAgendamento, atualizarStatus, removerAgendamento }}
-    >
+    <ManutencoesContext.Provider value={{
+      agendamentos, adicionarAgendamento, atualizarStatus, removerAgendamento, horarioDisponivel,
+    }}>
       {children}
     </ManutencoesContext.Provider>
   );

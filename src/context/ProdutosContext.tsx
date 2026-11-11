@@ -1,17 +1,43 @@
-import { createContext, useContext, useState, useMemo, type ReactNode } from 'react';
+import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { produtos as initialProdutos, type Produto } from '../data';
+import { usePersistentState } from '../utils/storage';
 
 function computeStatus(estoque: number, estoqueMinimo: number): Produto['status'] {
-  if (estoque === 0) return 'zerado';
+  if (estoque <= 0) return 'zerado';
   if (estoque < estoqueMinimo) return 'baixo';
   return 'ok';
 }
 
+export interface MovimentacaoEstoque {
+  id: number;
+  produtoId: number;
+  produtoNome: string;
+  tipo: 'entrada' | 'saida' | 'venda' | 'estorno';
+  quantidade: number;
+  estoqueAnterior: number;
+  estoqueAtual: number;
+  motivo: string;
+  data: string;
+  pedidoId?: number;
+}
+
+interface ItemSaida {
+  produtoId: number;
+  quantidade: number;
+}
+
+interface ResultadoMovimentacao {
+  ok: boolean;
+  error?: string;
+}
+
 interface ProdutosContextValue {
   produtos: Produto[];
+  movimentacoes: MovimentacaoEstoque[];
   addProduto: (produto: Omit<Produto, 'id' | 'status'>) => void;
   removerProduto: (id: number) => void;
-  atualizarEstoque: (id: number, novaQtd: number) => void;
+  atualizarEstoque: (id: number, novaQtd: number) => boolean;
+  registrarSaida: (itens: ItemSaida[], motivo: string, permitirSemEstoque?: boolean) => ResultadoMovimentacao;
   toggleVitrine: (id: number) => void;
   estoqueBaixo: number;
   semEstoque: number;
@@ -21,45 +47,111 @@ interface ProdutosContextValue {
 const ProdutosContext = createContext<ProdutosContextValue | null>(null);
 
 export function ProdutosProvider({ children }: { children: ReactNode }) {
-  const [produtos, setProdutos] = useState<Produto[]>(initialProdutos);
+  const [produtos, setProdutos] = usePersistentState<Produto[]>('slm.produtos.v1', initialProdutos);
+  const [movimentacoes, setMovimentacoes] = usePersistentState<MovimentacaoEstoque[]>('slm.movimentacoes-estoque.v1', []);
 
   const addProduto = (produto: Omit<Produto, 'id' | 'status'>) => {
-    setProdutos((prev) => {
-      const id = Math.max(0, ...prev.map((item) => item.id)) + 1;
-      return [...prev, { ...produto, id, status: computeStatus(produto.estoque, produto.estoqueMinimo) }];
+    setProdutos((current) => {
+      const id = Math.max(0, ...current.map((item) => item.id)) + 1;
+      return [...current, { ...produto, id, status: computeStatus(produto.estoque, produto.estoqueMinimo) }];
     });
   };
 
   const removerProduto = (id: number) => {
-    setProdutos((prev) => prev.filter((produto) => produto.id !== id));
+    setProdutos((current) => current.filter((produto) => produto.id !== id));
   };
 
   const atualizarEstoque = (id: number, novaQtd: number) => {
-    const qty = Math.max(0, novaQtd);
-    setProdutos((prev) =>
-      prev.map((p) =>
-        p.id === id ? { ...p, estoque: qty, status: computeStatus(qty, p.estoqueMinimo) } : p
-      )
-    );
+    const product = produtos.find((item) => item.id === id);
+    if (!product) return false;
+    const quantity = Math.max(0, Math.floor(novaQtd));
+    const delta = quantity - product.estoque;
+    if (delta === 0) return true;
+    setProdutos((current) => current.map((item) =>
+      item.id === id ? { ...item, estoque: quantity, status: computeStatus(quantity, item.estoqueMinimo) } : item
+    ));
+    const movement: MovimentacaoEstoque = {
+      id: Math.max(0, ...movimentacoes.map((item) => item.id)) + 1,
+      produtoId: id,
+      produtoNome: product.nome,
+      tipo: delta > 0 ? 'entrada' : 'saida',
+      quantidade: Math.abs(delta),
+      estoqueAnterior: product.estoque,
+      estoqueAtual: quantity,
+      motivo: 'Ajuste manual no painel de estoque',
+      data: new Date().toISOString(),
+    };
+    setMovimentacoes((current) => [movement, ...current].slice(0, 500));
+    return true;
+  };
+
+  const registrarSaida = (itens: ItemSaida[], motivo: string, permitirSemEstoque = false): ResultadoMovimentacao => {
+    const quantities = new Map<number, number>();
+    for (const item of itens) {
+      if (!Number.isInteger(item.quantidade) || item.quantidade <= 0) {
+        return { ok: false, error: 'A quantidade de cada produto deve ser um número inteiro positivo.' };
+      }
+      quantities.set(item.produtoId, (quantities.get(item.produtoId) ?? 0) + item.quantidade);
+    }
+
+    for (const [produtoId, quantity] of quantities) {
+      const product = produtos.find((item) => item.id === produtoId);
+      if (!product) return { ok: false, error: 'Um produto do pedido não existe mais no catálogo.' };
+      if (!permitirSemEstoque && product.estoque < quantity) {
+        return {
+          ok: false,
+          error: 'Estoque insuficiente para ' + product.nome + '. Disponível: ' + product.estoque + '; solicitado: ' + quantity + '.',
+        };
+      }
+    }
+
+    const movements: MovimentacaoEstoque[] = [];
+    const nextProducts = produtos.map((product) => {
+      const quantity = quantities.get(product.id);
+      if (!quantity) return product;
+      const nextStock = Math.max(0, product.estoque - quantity);
+      movements.push({
+        id: Math.max(0, ...movimentacoes.map((item) => item.id), ...movements.map((item) => item.id)) + 1,
+        produtoId: product.id,
+        produtoNome: product.nome,
+        tipo: 'venda',
+        quantidade,
+        estoqueAnterior: product.estoque,
+        estoqueAtual: nextStock,
+        motivo: nextStock === 0 && quantity > product.estoque
+          ? motivo + ' (saldo pendente de ' + (quantity - product.estoque) + ' unidade(s))'
+          : motivo,
+        data: new Date().toISOString(),
+      });
+      return { ...product, estoque: nextStock, status: computeStatus(nextStock, product.estoqueMinimo) };
+    });
+    setProdutos(nextProducts);
+    setMovimentacoes((current) => [...movements, ...current].slice(0, 500));
+    return { ok: true };
   };
 
   const toggleVitrine = (id: number) => {
-    setProdutos((prev) => prev.map((p) => (p.id === id ? { ...p, naVitrine: !p.naVitrine } : p)));
+    setProdutos((current) => current.map((product) =>
+      product.id === id ? { ...product, naVitrine: !product.naVitrine } : product
+    ));
   };
 
-  const estoqueBaixo = useMemo(() => produtos.filter((p) => p.status === 'baixo').length, [produtos]);
-  const semEstoque = useMemo(() => produtos.filter((p) => p.status === 'zerado').length, [produtos]);
+  const estoqueBaixo = useMemo(() => produtos.filter((product) => product.status === 'baixo').length, [produtos]);
+  const semEstoque = useMemo(() => produtos.filter((product) => product.status === 'zerado').length, [produtos]);
   const alertasCount = estoqueBaixo + semEstoque;
 
   return (
-    <ProdutosContext.Provider value={{ produtos, addProduto, removerProduto, atualizarEstoque, toggleVitrine, estoqueBaixo, semEstoque, alertasCount }}>
+    <ProdutosContext.Provider value={{
+      produtos, movimentacoes, addProduto, removerProduto, atualizarEstoque, registrarSaida,
+      toggleVitrine, estoqueBaixo, semEstoque, alertasCount,
+    }}>
       {children}
     </ProdutosContext.Provider>
   );
 }
 
 export function useProdutos() {
-  const ctx = useContext(ProdutosContext);
-  if (!ctx) throw new Error('useProdutos must be inside ProdutosProvider');
-  return ctx;
+  const context = useContext(ProdutosContext);
+  if (!context) throw new Error('useProdutos must be inside ProdutosProvider');
+  return context;
 }
