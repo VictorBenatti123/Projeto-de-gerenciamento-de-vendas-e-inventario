@@ -150,7 +150,7 @@ export function ProdutosProvider({ children }: { children: ReactNode }) {
       const nextStock = product.estoque + quantity;
       movements.push({
         id: Math.max(0, ...movimentacoes.map((item) => item.id), ...movements.map((item) => item.id)) + 1,
-        produtoId: product.id, produtoNome: product.nome, tipo: 'estorno', quantidade,
+        produtoId: product.id, produtoNome: product.nome, tipo: 'estorno', quantidade: quantity,
         estoqueAnterior: product.estoque, estoqueAtual: nextStock,
         motivo: 'Estorno do pedido #' + pedidoId, data: new Date().toISOString(), pedidoId,
       });
