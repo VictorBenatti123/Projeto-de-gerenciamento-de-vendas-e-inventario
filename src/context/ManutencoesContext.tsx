@@ -40,7 +40,7 @@ export function duracaoServico(servico: string) {
 }
 
 function minutosDoHorario(hora: string) {
-  const match = /^(\\d{2}):(\\d{2})$/.exec(hora);
+  const match = /^(\d{2}):(\d{2})$/.exec(hora);
   if (!match) return null;
   const hours = Number(match[1]);
   const minutes = Number(match[2]);
