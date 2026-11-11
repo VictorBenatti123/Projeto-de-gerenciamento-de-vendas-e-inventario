@@ -98,7 +98,7 @@ export default function Relatorios() {
       pedido.itensDetalhados.forEach((item) => {
         const current = productStats.get(item.nome) ?? { name: item.nome, quantity: 0, revenue: 0, category: item.categoria };
         current.quantity += item.quantidade;
-        current.revenue += item.precoUnitario * item.quantidade;
+        current.revenue += item.subtotal ?? item.precoUnitario * item.quantidade;
         productStats.set(item.nome, current);
       });
       return;

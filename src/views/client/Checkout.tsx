@@ -84,7 +84,21 @@ export default function Checkout({ onBack, onSuccess }: Props) {
       return;
     }
     await new Promise((r) => setTimeout(r, 300));
-    const orderTotal = payMethod === 'pix' ? total * 0.95 : total;
+    const orderTotal = Number((payMethod === 'pix' ? total * 0.95 : total).toFixed(2));
+    const grossItemsTotal = itemsToSell.reduce((sum, item) => sum + item.produto.preco * item.quantidade, 0);
+    let remainingOrderTotal = orderTotal;
+    const itensDetalhados = itemsToSell.map(({ produto, quantidade }, index) => {
+      const lineGross = produto.preco * quantidade;
+      const subtotal = index === itemsToSell.length - 1
+        ? remainingOrderTotal
+        : Number((orderTotal * lineGross / grossItemsTotal).toFixed(2));
+      remainingOrderTotal = Number((remainingOrderTotal - subtotal).toFixed(2));
+      return {
+        produtoId: produto.id, sku: produto.sku, nome: produto.nome,
+        categoria: produto.categoria, quantidade,
+        precoUnitario: Number((subtotal / quantidade).toFixed(4)), subtotal,
+      };
+    });
     adicionarPedido({
       clienteId: user?.id,
       cliente: form.name.trim(),
@@ -93,10 +107,7 @@ export default function Checkout({ onBack, onSuccess }: Props) {
       status: payMethod === 'boleto' ? 'processando' : 'pago',
       data: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }),
       itens: itemsToSell.map(({ produto, quantidade }) => `${quantidade}x ${produto.nome}`),
-      itensDetalhados: itemsToSell.map(({ produto, quantidade }) => ({
-        produtoId: produto.id, sku: produto.sku, nome: produto.nome,
-        categoria: produto.categoria, quantidade, precoUnitario: produto.preco,
-      })),
+      itensDetalhados,
       origem: 'site',
       formaPagamento: payMethod,
       finalCartao: payMethod === 'cartao' ? form.cardNumber.replace(/\D/g, '').slice(-4) : undefined,

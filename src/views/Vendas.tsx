@@ -56,6 +56,11 @@ export default function Vendas() {
       return;
     }
     const matchedItems = parsedItems as { raw: string; quantidade: number; produto: (typeof produtos)[number] }[];
+    const orderTotal = Number(form.get('total'));
+    if (!Number.isFinite(orderTotal) || orderTotal <= 0) {
+      setFormError('Informe um valor total maior que zero.');
+      return;
+    }
     const settings = readStoredValue<{ permitirVendaSemEstoque?: boolean }>('slm.configuracoes.v1', {});
     const stockResult = registrarSaida(
       matchedItems.map(({ produto, quantidade }) => ({ produtoId: produto.id, quantidade })),
@@ -67,19 +72,25 @@ export default function Vendas() {
       return;
     }
     const itens = matchedItems.map(({ produto, quantidade }) => `${quantidade}x ${produto.nome}`);
-    const itensDetalhados = matchedItems.map(({ produto, quantidade }) => ({
-      produtoId: produto.id,
-      sku: produto.sku,
-      nome: produto.nome,
-      categoria: produto.categoria,
-      quantidade,
-      precoUnitario: produto.preco,
-    }));
+    const grossItemsTotal = matchedItems.reduce((sum, item) => sum + item.produto.preco * item.quantidade, 0);
+    let remainingOrderTotal = orderTotal;
+    const itensDetalhados = matchedItems.map(({ produto, quantidade }, index) => {
+      const lineGross = produto.preco * quantidade;
+      const subtotal = index === matchedItems.length - 1
+        ? remainingOrderTotal
+        : Number((orderTotal * lineGross / grossItemsTotal).toFixed(2));
+      remainingOrderTotal = Number((remainingOrderTotal - subtotal).toFixed(2));
+      return {
+        produtoId: produto.id, sku: produto.sku, nome: produto.nome,
+        categoria: produto.categoria, quantidade,
+        precoUnitario: Number((subtotal / quantidade).toFixed(4)), subtotal,
+      };
+    });
     const now = new Date();
     setFormError('');
     adicionarPedido({
       cliente: String(form.get('cliente')).trim(),
-      total: Number(form.get('total')),
+      total: orderTotal,
       status: String(form.get('status')) as Venda['status'],
       data: now.toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }),
       itens,

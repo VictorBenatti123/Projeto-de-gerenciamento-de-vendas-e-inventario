@@ -11,6 +11,7 @@ export interface ItemPedido {
   categoria: string;
   quantidade: number;
   precoUnitario: number;
+  subtotal?: number;
 }
 
 export interface Pedido extends Venda {
