@@ -10,7 +10,7 @@ const statusStyles: Record<string, string> = {
 const statusLabels: Record<string, string> = { ok: 'Normal', baixo: 'Baixo', zerado: 'Zerado' };
 
 export default function Estoque() {
-  const { produtos, atualizarEstoque, estoqueBaixo, semEstoque } = useProdutos();
+  const { produtos, movimentacoes, atualizarEstoque, estoqueBaixo, semEstoque } = useProdutos();
   const [search, setSearch] = useState('');
   const [catFilter, setCatFilter] = useState('Todas');
   const [statusFilter, setStatusFilter] = useState('todos');
@@ -139,6 +139,38 @@ export default function Estoque() {
           {filtered.length} de {produtos.length} itens
         </div>
       </div>
+      <section className="overflow-hidden rounded-xl border border-slate-100 bg-white shadow-sm">
+        <div className="border-b border-slate-100 px-5 py-4">
+          <h3 className="text-sm font-bold text-slate-800">Movimentações recentes</h3>
+          <p className="mt-1 text-xs text-slate-400">Entradas, ajustes e saídas geradas por vendas ou alterações manuais.</p>
+        </div>
+        {movimentacoes.length === 0 ? (
+          <div className="px-5 py-8 text-center text-sm text-slate-400">Nenhuma movimentação registrada ainda.</div>
+        ) : (
+          <div className="divide-y divide-slate-50">
+            {movimentacoes.slice(0, 10).map((movement) => {
+              const isEntry = movement.tipo === 'entrada' || movement.tipo === 'estorno';
+              const label = movement.tipo === 'venda' ? 'Venda' : movement.tipo === 'estorno' ? 'Estorno' : movement.tipo === 'entrada' ? 'Entrada' : 'Saída';
+              return (
+                <div key={movement.id} className="flex flex-col gap-2 px-5 py-3 sm:flex-row sm:items-center">
+                  <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-sm ${isEntry ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}`}>
+                    {isEntry ? '↓' : '↑'}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-semibold text-slate-800">{movement.produtoNome}</div>
+                    <div className="text-xs text-slate-400">{movement.motivo}</div>
+                  </div>
+                  <div className="text-xs text-slate-500 sm:text-right">
+                    <div className="font-semibold text-slate-700">{label}: {movement.quantidade} un.</div>
+                    <div>Estoque: {movement.estoqueAnterior} → {movement.estoqueAtual}</div>
+                    <div>{new Date(movement.data).toLocaleString('pt-BR')}</div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </section>
       {creating && <ProductFormModal onClose={() => setCreating(false)} />}
     </div>
   );
