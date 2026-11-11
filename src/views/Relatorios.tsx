@@ -50,11 +50,11 @@ export default function Relatorios() {
 
   const selectedOrders = pedidos.filter((pedido) => {
     const date = parseBrDate(pedido.data);
-    return date && date >= periodStart && date <= referenceDate && pedido.status !== 'cancelado';
+    return date && date >= periodStart && date <= referenceDate && (pedido.status === 'pago' || pedido.status === 'enviado');
   });
   const previousOrders = pedidos.filter((pedido) => {
     const date = parseBrDate(pedido.data);
-    return date && date >= previousStart && date <= previousEnd && pedido.status !== 'cancelado';
+    return date && date >= previousStart && date <= previousEnd && (pedido.status === 'pago' || pedido.status === 'enviado');
   });
   const selectedMaintenance = agendamentos.filter((item) => {
     const date = parseIsoDate(item.date);
@@ -94,23 +94,24 @@ export default function Relatorios() {
 
   const productStats = new Map<string, { name: string; quantity: number; revenue: number; category: string }>();
   selectedOrders.forEach((pedido) => {
+    if (pedido.itensDetalhados?.length) {
+      pedido.itensDetalhados.forEach((item) => {
+        const current = productStats.get(item.nome) ?? { name: item.nome, quantity: 0, revenue: 0, category: item.categoria };
+        current.quantity += item.quantidade;
+        current.revenue += item.precoUnitario * item.quantidade;
+        productStats.set(item.nome, current);
+      });
+      return;
+    }
+
+    // Pedidos antigos não guardavam o preço unitário no momento da venda.
+    // Mantemos a quantidade no ranking, mas não inventamos uma receita por produto.
     pedido.itens.forEach((item) => {
       const { quantity, name } = itemParts(item);
-      const product = produtos.find(
-        (candidate) =>
-          candidate.nome.toLowerCase() === name.toLowerCase() ||
-          candidate.nome.toLowerCase().includes(name.toLowerCase()) ||
-          name.toLowerCase().includes(candidate.nome.toLowerCase())
-      );
+      const product = produtos.find((candidate) => candidate.nome.toLowerCase() === name.toLowerCase());
       const key = product?.nome ?? name;
-      const current = productStats.get(key) ?? {
-        name: key,
-        quantity: 0,
-        revenue: 0,
-        category: product?.categoria ?? 'Outros',
-      };
+      const current = productStats.get(key) ?? { name: key, quantity: 0, revenue: 0, category: product?.categoria ?? 'Outros' };
       current.quantity += quantity;
-      current.revenue += product ? product.preco * quantity : pedido.total / Math.max(1, pedido.itens.length);
       productStats.set(key, current);
     });
   });
@@ -235,7 +236,7 @@ export default function Relatorios() {
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section className="rounded-xl border border-slate-100 bg-white p-6 shadow-sm">
           <h3 className="text-sm font-bold text-slate-800">Receita por categoria</h3>
-          <p className="mb-5 text-xs text-slate-400">Calculada a partir dos itens dos pedidos</p>
+          <p className="mb-5 text-xs text-slate-400">A receita por produto usa o preço registrado no momento da venda. Pedidos antigos sem esse detalhamento entram apenas nas quantidades.</p>
           {categories.length ? (
             <div className="space-y-3">
               {categories.map((category) => (
