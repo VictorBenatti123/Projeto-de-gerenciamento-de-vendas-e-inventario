@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useManutencoes } from '../../context/ManutencoesContext';
+import { formatCardExpiry, formatCardNumber, formatCvv } from '../../utils/masks';
 
 const HERO = 'https://images.unsplash.com/photo-1675798227643-da319f8ee8f7?w=1200&h=400&fit=crop&auto=format&q=80';
 
@@ -31,6 +32,12 @@ export default function Manutencao() {
   const [success, setSuccess] = useState(false);
   const [paymentStep, setPaymentStep] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'pix' | 'cartao'>('pix');
+  const [cardForm, setCardForm] = useState({ name: '', number: '', expiry: '', cvv: '' });
+  const [installments, setInstallments] = useState('1');
+  const updateCardField = (field: keyof typeof cardForm, formatter?: (value: string) => string) => (event: React.ChangeEvent<HTMLInputElement>) => {
+    const value = formatter ? formatter(event.target.value) : event.target.value;
+    setCardForm((current) => ({ ...current, [field]: value }));
+  };
 
   const minDate = new Date();
   minDate.setDate(minDate.getDate() + 1);
@@ -64,6 +71,15 @@ export default function Manutencao() {
 
   const confirmarPagamentoDemo = async () => {
     if (!servicoSelecionado || !selectedDate || !selectedTime) return;
+    if (paymentMethod === 'cartao') {
+      const numeroValido = /^\\d{4} \\d{4} \\d{4} \\d{4}$/.test(cardForm.number);
+      const validadeValida = /^(0[1-9]|1[0-2])\\/\\d{2}$/.test(cardForm.expiry);
+      const cvvValido = /^\\d{3,4}$/.test(cardForm.cvv);
+      if (!cardForm.name.trim() || !numeroValido || !validadeValida || !cvvValido) {
+        window.alert('Preencha corretamente o nome, número, validade e código de segurança do cartão.');
+        return;
+      }
+    }
     if (!horarioDisponivel(selectedDate, selectedTime, servicoSelecionado.label)) {
       window.alert('Este horário não está mais disponível. Escolha outro.');
       setPaymentStep(false);
@@ -142,11 +158,46 @@ export default function Manutencao() {
                   </div>
                 ) : (
                   <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                    <div className="flex items-center gap-3">
+                    <div className="mb-5 flex items-center gap-3">
                       <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-2xl text-blue-600 shadow-sm">▰</div>
-                      <div><p className="font-semibold text-slate-800">Cartão de crédito</p><p className="text-xs text-slate-500">Adiantamento de {adiantamento.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</p></div>
+                      <div>
+                        <p className="font-semibold text-slate-800">Cartão de crédito</p>
+                        <p className="text-xs text-slate-500">Adiantamento de {adiantamento.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</p>
+                      </div>
                     </div>
-                    <p className="mt-4 text-sm text-slate-600">Os dados do cartão serão solicitados no ambiente seguro de pagamento.</p>
+                    <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                      Ambiente de demonstração. Não informe dados reais do cartão.
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-slate-700">Nome no cartão</label>
+                        <input autoComplete="off" maxLength={100} value={cardForm.name} onChange={updateCardField('name')} placeholder="Como impresso no cartão" className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-slate-700">Número do cartão</label>
+                        <input autoComplete="off" inputMode="numeric" maxLength={19} pattern="\\d{4} \\d{4} \\d{4} \\d{4}" value={cardForm.number} onChange={updateCardField('number', formatCardNumber)} placeholder="0000 0000 0000 0000" className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="mb-1.5 block text-sm font-medium text-slate-700">Validade</label>
+                          <input autoComplete="off" inputMode="numeric" maxLength={5} pattern="(0[1-9]|1[0-2])\\/\\d{2}" value={cardForm.expiry} onChange={updateCardField('expiry', formatCardExpiry)} placeholder="MM/AA" className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+                        </div>
+                        <div>
+                          <label className="mb-1.5 block text-sm font-medium text-slate-700">CVV</label>
+                          <input autoComplete="off" inputMode="numeric" maxLength={4} value={cardForm.cvv} onChange={updateCardField('cvv', formatCvv)} placeholder="123" className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none transition-all focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="mb-1.5 block text-sm font-medium text-slate-700">Parcelamento</label>
+                        <select value={installments} onChange={(event) => setInstallments(event.target.value)} className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+                          {Array.from({ length: 10 }, (_, index) => index + 1).map((quantity) => (
+                            <option key={quantity} value={quantity}>
+                              {quantity}x de {(adiantamento / quantity).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} {quantity === 1 ? '(à vista)' : 'sem juros'}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
