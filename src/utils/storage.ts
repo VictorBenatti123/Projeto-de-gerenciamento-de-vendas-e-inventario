@@ -15,7 +15,11 @@ export function usePersistentState<T>(key: string, fallback: T): [T, Dispatch<Se
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(key, JSON.stringify(value));
+      const serialized = JSON.stringify(value);
+      // A storage event in another tab must not cause ping-pong writes.
+      if (window.localStorage.getItem(key) !== serialized) {
+        window.localStorage.setItem(key, serialized);
+      }
     } catch (error) {
       console.warn('Não foi possível salvar os dados locais.', error);
     }
