@@ -27,6 +27,7 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+      - run: pnpm exec tsc --noEmit
       - run: pnpm build
 
       - uses: actions/configure-pages@v5
