@@ -43,7 +43,7 @@ const viewTitles: Partial<Record<ViewId, string>> = {
 
 // ─── Notification Bell ────────────────────────────────────────────────────────
 function NotificationBell({ onNavigate, configuracoes }: { onNavigate: (v: ViewId) => void; configuracoes: ConfiguracoesData }) {
-  const { produtos, alertasCount } = useProdutos();
+  const { produtos } = useProdutos();
   const { pedidos } = usePedidos();
   const { agendamentos } = useManutencoes();
   const [lidas, setLidas] = usePersistentState<string[]>('slm.notificacoes-lidas.v1', []);
@@ -72,6 +72,16 @@ function NotificationBell({ onNavigate, configuracoes }: { onNavigate: (v: ViewI
     ...(configuracoes.novoAgendamento ? agendamentos.filter((a) => a.createdAt && a.origem === 'cliente').slice(-10).map((a: AgendamentoManutencao) => ({
       id: `m${a.id}`, icon: '🔧', title: `Novo agendamento: ${a.cliente}`, sub: `${a.date} · ${a.hora} · ${a.servico}`, view: 'agenda' as ViewId,
     })) : []),
+    ...(configuracoes.resumoDiario ? (() => {
+      const today = new Date().toLocaleDateString('sv-SE');
+      const salesToday = pedidos.filter((p) => p.createdAt && new Date(p.createdAt).toLocaleDateString('sv-SE') === today && p.status !== 'cancelado');
+      const servicesToday = agendamentos.filter((a) => a.createdAt && new Date(a.createdAt).toLocaleDateString('sv-SE') === today);
+      return salesToday.length + servicesToday.length > 0 ? [{
+        id: `r${today}`, icon: '📊', title: 'Resumo diário',
+        sub: `${salesToday.length} venda(s) · ${servicesToday.length} agendamento(s)`,
+        view: 'dashboard' as ViewId,
+      }] : [];
+    })() : []),
   ].sort((a, b) => b.id.localeCompare(a.id));
   const unreadNotifications = notifications.filter((item) => !lidas.includes(item.id));
   const unreadCount = unreadNotifications.length;
