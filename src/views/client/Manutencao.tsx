@@ -30,6 +30,7 @@ export default function Manutencao() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [paymentStep, setPaymentStep] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'cartao'>('pix');
 
   const minDate = new Date();
   minDate.setDate(minDate.getDate() + 1);
@@ -119,16 +120,38 @@ export default function Manutencao() {
                 </div>
               </div>
               <div>
-                <div className="mb-4 flex items-center gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-2xl">▦</div><div><h2 className="font-bold text-slate-900">Pix</h2><p className="text-xs text-slate-500">Demonstração de pagamento</p></div><span className="ml-auto rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Selecionado</span></div>
-                <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-5 py-7 text-center">
-                  <div className="mx-auto mb-4 flex h-36 w-36 items-center justify-center rounded-xl border border-slate-200 bg-white text-5xl text-slate-300">▦</div>
-                  <p className="font-semibold text-slate-800">QR Code ilustrativo</p>
-                  <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-slate-500">Esta tela é apenas uma simulação visual. Não existe código Pix válido nem cobrança real.</p>
-                  <div className="mt-4 rounded-lg bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800">Não transfira dinheiro. O Pix ainda não está integrado.</div>
+                <div className="mb-4">
+                  <h2 className="font-bold text-slate-900">Forma de pagamento</h2>
+                  <p className="mt-1 text-xs text-slate-500">Escolha como deseja pagar o adiantamento.</p>
                 </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <button type="button" onClick={() => setPaymentMethod('pix')} className={`flex items-center gap-3 rounded-xl border-2 p-4 text-left transition-colors ${paymentMethod === 'pix' ? 'border-emerald-500 bg-emerald-50' : 'border-slate-200 hover:border-slate-300'}`}>
+                    <span className="text-2xl text-emerald-600">▦</span>
+                    <span><span className="block text-sm font-semibold text-slate-900">Pix</span><span className="text-xs text-slate-500">Pagamento instantâneo</span></span>
+                  </button>
+                  <button type="button" onClick={() => setPaymentMethod('cartao')} className={`flex items-center gap-3 rounded-xl border-2 p-4 text-left transition-colors ${paymentMethod === 'cartao' ? 'border-blue-500 bg-blue-50' : 'border-slate-200 hover:border-slate-300'}`}>
+                    <span className="text-2xl text-blue-600">▰</span>
+                    <span><span className="block text-sm font-semibold text-slate-900">Cartão</span><span className="text-xs text-slate-500">Crédito</span></span>
+                  </button>
+                </div>
+                {paymentMethod === 'pix' ? (
+                  <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-5 py-7 text-center">
+                    <div className="mx-auto mb-4 flex h-36 w-36 items-center justify-center rounded-xl border border-slate-200 bg-white text-5xl text-slate-300">▦</div>
+                    <p className="font-semibold text-slate-800">QR Code Pix</p>
+                    <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-slate-500">O código Pix será disponibilizado após a integração do meio de pagamento.</p>
+                  </div>
+                ) : (
+                  <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-5">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white text-2xl text-blue-600 shadow-sm">▰</div>
+                      <div><p className="font-semibold text-slate-800">Cartão de crédito</p><p className="text-xs text-slate-500">Adiantamento de {adiantamento.toLocaleString('pt-BR',{style:'currency',currency:'BRL'})}</p></div>
+                    </div>
+                    <p className="mt-4 text-sm text-slate-600">Os dados do cartão serão solicitados no ambiente seguro de pagamento.</p>
+                  </div>
+                )}
               </div>
-              <button type="button" disabled={loading} onClick={confirmarPagamentoDemo} className="w-full rounded-xl bg-emerald-600 px-5 py-4 text-sm font-bold text-white transition-colors hover:bg-emerald-700 disabled:cursor-wait disabled:opacity-60">{loading ? 'Processando demonstração...' : 'Simular pagamento e confirmar agendamento'}</button>
-              <p className="text-center text-xs text-slate-400">Ao continuar, o sistema apenas simulará a confirmação para fins de apresentação.</p>
+              <button type="button" disabled={loading} onClick={confirmarPagamentoDemo} className="w-full rounded-xl bg-emerald-600 px-5 py-4 text-sm font-bold text-white transition-colors hover:bg-emerald-700 disabled:cursor-wait disabled:opacity-60">{loading ? 'Processando...' : 'Confirmar adiantamento e agendar'}</button>
+              <p className="text-center text-xs text-slate-400">Ambiente de demonstração: nenhuma cobrança será realizada.</p>
             </div>
           </div>
         </div>
