@@ -1,16 +1,24 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useProdutos } from '../context/ProdutosContext';
 import ProductFormModal from '../components/ProductFormModal';
 import AdminModal from '../components/AdminModal';
 import type { Produto } from '../data';
 
-export default function Produtos() {
+export default function Produtos({ focusProductId = null }: { focusProductId?: number | null }) {
   const { produtos, toggleVitrine, removerProduto } = useProdutos();
   const [search, setSearch] = useState('');
   const [cat, setCat] = useState('Todas');
   const [view, setView] = useState<'grid' | 'table'>('grid');
   const [creating, setCreating] = useState(false);
   const [produtoParaRemover, setProdutoParaRemover] = useState<Produto | null>(null);
+
+  useEffect(() => {
+    if (focusProductId === null) return;
+    setSearch('');
+    setCat('Todas');
+    const timer = window.setTimeout(() => document.getElementById(`produto-${focusProductId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+    return () => window.clearTimeout(timer);
+  }, [focusProductId]);
 
   const categorias = ['Todas', ...Array.from(new Set(produtos.map((p) => p.categoria))).sort()];
   const naVitrine = produtos.filter((p) => p.naVitrine).length;
@@ -86,7 +94,7 @@ export default function Produtos() {
         {view === 'grid' ? (
           <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 p-5">
             {filtered.map((p) => (
-              <div key={p.id} className="border border-slate-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow group">
+              <div id={`produto-${p.id}`} key={p.id} className="border border-slate-100 rounded-xl overflow-hidden hover:shadow-md transition-shadow group">
                 <div className="relative h-36 overflow-hidden bg-slate-100">
                   <img src={p.imagem} alt={p.nome} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
                   <div className="absolute top-2 right-2">
@@ -125,7 +133,7 @@ export default function Produtos() {
               </thead>
               <tbody>
                 {filtered.map((p) => (
-                  <tr key={p.id} className="border-b border-slate-50 hover:bg-slate-50/50">
+                  <tr id={`produto-${p.id}`} key={p.id} className="border-b border-slate-50 hover:bg-slate-50/50">
                     <td className="px-4 py-3 text-xs font-mono text-slate-500">{p.sku}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
