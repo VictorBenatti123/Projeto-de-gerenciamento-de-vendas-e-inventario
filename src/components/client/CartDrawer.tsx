@@ -7,7 +7,7 @@ interface Props {
 
 export default function CartDrawer({ onCheckout }: Props) {
   const { user } = useAuth();
-  const { items, isOpen, closeCart, removeItem, updateQty, total, count, clearCart, notice, clearNotice } = useCart();
+  const { items, isOpen, closeCart, removeItem, updateQty, total, count, clearCart, notice, permiteSemEstoque, clearNotice } = useCart();
 
   return (
     <>
@@ -73,7 +73,7 @@ export default function CartDrawer({ onCheckout }: Props) {
                       <span className="text-sm font-semibold text-slate-800 w-6 text-center">{quantidade}</span>
                       <button
                         onClick={() => updateQty(produto.id, quantidade + 1)}
-                        disabled={quantidade >= produto.estoque}
+                        disabled={!permiteSemEstoque && quantidade >= produto.estoque}
                         className="w-7 h-7 flex items-center justify-center text-slate-500 hover:bg-slate-50 rounded-r-lg text-sm font-bold transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         +

@@ -17,7 +17,7 @@ const statusBadge = (p: Produto) => {
 };
 
 export default function ProdutoDetalhe({ produtoId, onBack, onViewProduto, onCheckout }: Props) {
-  const { addItem } = useCart();
+  const { addItem, permiteSemEstoque } = useCart();
   const { produtos } = useProdutos();
   const produto = produtos.find((p) => p.id === produtoId);
   const [qty, setQty] = useState(1);
@@ -120,7 +120,7 @@ export default function ProdutoDetalhe({ produtoId, onBack, onViewProduto, onChe
             </div>
 
             {/* Quantity + Add to cart */}
-            {produto.estoque > 0 ? (
+            {produto.estoque > 0 || permiteSemEstoque ? (
               <div className="space-y-3">
                 <div className="flex items-center gap-3">
                   <div className="flex items-center border border-slate-200 rounded-xl overflow-hidden">
@@ -134,7 +134,8 @@ export default function ProdutoDetalhe({ produtoId, onBack, onViewProduto, onChe
                       {qty}
                     </span>
                     <button
-                      onClick={() => setQty(Math.min(produto.estoque, qty + 1))}
+                      onClick={() => setQty(qty + 1)}
+                      disabled={!permiteSemEstoque && qty >= produto.estoque}
                       className="w-10 h-12 flex items-center justify-center text-slate-500 hover:bg-slate-50 text-lg font-bold transition-colors"
                     >
                       +

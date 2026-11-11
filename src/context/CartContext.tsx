@@ -18,6 +18,7 @@ interface CartContextValue {
   count: number;
   isOpen: boolean;
   notice: string | null;
+  permiteSemEstoque: boolean;
   clearNotice: () => void;
   openCart: () => void;
   closeCart: () => void;
@@ -35,6 +36,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const allowsBackorder = () =>
     readStoredValue<{ permitirVendaSemEstoque?: boolean }>(SETTINGS_KEY, {}).permitirVendaSemEstoque === true;
+  const permiteSemEstoque = allowsBackorder();
 
   const addItem = (produto: Produto, quantidade = 1) => {
     const existing = storedItems.find((item) => item.produto.id === produto.id);
@@ -101,7 +103,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   return (
     <CartContext.Provider value={{
       items, addItem, removeItem, updateQty, clearCart, total, count,
-      isOpen, notice, clearNotice, openCart, closeCart,
+      isOpen, notice, permiteSemEstoque, clearNotice, openCart, closeCart,
     }}>
       {children}
     </CartContext.Provider>
