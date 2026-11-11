@@ -40,6 +40,7 @@ export interface Cliente {
   totalCompras: number;
   ultimaVisita: string;
   bicicletas: number;
+  userId?: string;
 }
 
 export interface Alerta {

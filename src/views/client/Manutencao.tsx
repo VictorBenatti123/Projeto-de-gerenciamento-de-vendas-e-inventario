@@ -23,7 +23,7 @@ const statusStyles = {
 
 export default function Manutencao() {
   const { user } = useAuth();
-  const { agendamentos, adicionarAgendamento, removerAgendamento } = useManutencoes();
+  const { agendamentos, adicionarAgendamento, removerAgendamento, horarioDisponivel } = useManutencoes();
   const [selectedServico, setSelectedServico] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
@@ -41,7 +41,7 @@ export default function Manutencao() {
       .map((agendamento) => agendamento.hora)
   );
   const meusAgendamentos = agendamentos.filter(
-    (agendamento) => agendamento.origem === 'cliente' && agendamento.cliente === user?.name
+    (agendamento) => agendamento.origem === 'cliente' && (agendamento.clienteId ? agendamento.clienteId === user?.id : agendamento.cliente === user?.name)
   );
 
   const cancelarAgendamento = (id: number) => {
@@ -51,10 +51,15 @@ export default function Manutencao() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedServico || !selectedDate || !selectedTime) return;
+    if (!horarioDisponivel(selectedDate, selectedTime)) {
+      window.alert('Este horário acabou de ser reservado. Escolha outro horário.');
+      setSelectedTime('');
+      return;
+    }
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1200));
+    await new Promise((r) => setTimeout(r, 300));
     const servico = servicos.find((item) => item.id === selectedServico);
-    adicionarAgendamento({
+    const created = adicionarAgendamento({
       date: selectedDate,
       hora: selectedTime,
       cliente: user?.name ?? 'Cliente',
@@ -62,9 +67,15 @@ export default function Manutencao() {
       bicicleta: bikeModel.trim(),
       observacoes: notes.trim() || undefined,
       origem: 'cliente',
+      clienteId: user?.id,
       status: 'iniciar',
     });
     setLoading(false);
+    if (!created) {
+      window.alert('Este horário não está mais disponível. Escolha outro.');
+      setSelectedTime('');
+      return;
+    }
     setSuccess(true);
   };
 
@@ -74,7 +85,6 @@ export default function Manutencao() {
       <div className="max-w-2xl mx-auto px-6 py-16 text-center">
         <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center text-4xl mx-auto mb-6">✅</div>
         <h2 className="text-3xl font-bold text-slate-900 mb-3">Agendamento Confirmado!</h2>
-        <p className="text-slate-500 mb-8">Seu serviço foi agendado com sucesso. Você receberá um e-mail de confirmação em breve.</p>
         <div className="bg-slate-50 rounded-2xl p-6 text-left space-y-4 mb-8">
           <div className="flex justify-between">
             <span className="text-slate-500 text-sm">Serviço</span>

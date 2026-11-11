@@ -26,13 +26,12 @@ function toDateKey(year: number, month: number, day: number) {
 }
 
 export default function Agenda() {
-  const { agendamentos: agendaItems, adicionarAgendamento, atualizarStatus, removerAgendamento } = useManutencoes();
-  const latestClientDate =
-    [...agendaItems].reverse().find((agendamento) => agendamento.origem === 'cliente')?.date ?? '2026-05-28';
-  const initialDate = new Date(`${latestClientDate}T12:00:00`);
-  const [year, setYear] = useState(initialDate.getFullYear());
-  const [month, setMonth] = useState(initialDate.getMonth());
-  const [selectedDate, setSelectedDate] = useState<string>(latestClientDate);
+  const { agendamentos: agendaItems, adicionarAgendamento, atualizarStatus, removerAgendamento, horarioDisponivel } = useManutencoes();
+  const todayDate = new Date();
+  const todayKey = toDateKey(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate());
+  const [year, setYear] = useState(todayDate.getFullYear());
+  const [month, setMonth] = useState(todayDate.getMonth());
+  const [selectedDate, setSelectedDate] = useState<string>(todayKey);
   const [creating, setCreating] = useState(false);
   const [originFilter, setOriginFilter] = useState<'todos' | 'cliente' | 'admin'>('todos');
 
@@ -58,7 +57,7 @@ export default function Agenda() {
   };
 
   const selectedItems = eventsByDate[selectedDate] ?? [];
-  const today = '2026-05-28';
+  const today = todayKey;
 
   const updateStatus = (id: number, status: AgendamentoManutencao['status']) => {
     atualizarStatus(id, status);
@@ -72,15 +71,24 @@ export default function Agenda() {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const date = String(form.get('date'));
-    adicionarAgendamento({
+    const hora = String(form.get('hora'));
+    if (!horarioDisponivel(date, hora)) {
+      window.alert('Já existe um agendamento neste horário. Escolha outra data ou horário.');
+      return;
+    }
+    const created = adicionarAgendamento({
       date,
-      hora: String(form.get('hora')),
+      hora,
       cliente: String(form.get('cliente')).trim(),
       servico: String(form.get('servico')).trim(),
       bicicleta: String(form.get('bicicleta')).trim(),
       status: 'iniciar',
       origem: 'admin',
     });
+    if (!created) {
+      window.alert('Já existe um agendamento neste horário.');
+      return;
+    }
     const parsed = new Date(`${date}T12:00:00`);
     setYear(parsed.getFullYear());
     setMonth(parsed.getMonth());

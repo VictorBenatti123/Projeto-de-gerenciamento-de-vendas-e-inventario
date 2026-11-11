@@ -20,6 +20,7 @@ export interface Pedido extends Venda {
   formaPagamento?: FormaPagamento;
   finalCartao?: string;
   itensDetalhados?: ItemPedido[];
+  createdAt?: string;
 }
 
 type NovoPedido = Omit<Pedido, 'id'>;
@@ -42,6 +43,7 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
   const adicionarPedido = (pedido: NovoPedido) => {
     const novoPedido: Pedido = {
       ...pedido,
+      createdAt: pedido.createdAt ?? new Date().toISOString(),
       id: Math.max(0, ...pedidos.map((item) => item.id)) + 1,
     };
     setPedidos((current) => [novoPedido, ...current]);

@@ -25,6 +25,9 @@ import Alertas from './views/Alertas';
 import Relatorios from './views/Relatorios';
 import Configuracoes, { configuracoesIniciais, type ConfiguracoesData } from './views/Configuracoes';
 import type { ViewId } from './data';
+import { usePersistentState } from './utils/storage';
+import type { Pedido } from './context/PedidosContext';
+import type { AgendamentoManutencao } from './context/ManutencoesContext';
 
 // ─── Client types ─────────────────────────────────────────────────────────────
 type ClientPage = 'vitrine' | 'produto' | 'checkout' | 'concluido' | 'manutencao' | 'contato';
@@ -37,21 +40,13 @@ const viewTitles: Partial<Record<ViewId, string>> = {
   relatorios: 'Relatórios', configuracoes: 'Configurações',
 };
 
-function Placeholder({ title }: { title: string }) {
-  return (
-    <div className="p-6">
-      <div className="bg-white rounded-xl border border-slate-100 shadow-sm p-16 text-center">
-        <div className="text-4xl mb-4">🚧</div>
-        <div className="text-lg font-semibold text-slate-700 mb-1">{title}</div>
-        <div className="text-sm text-slate-400">Esta seção estará disponível em breve.</div>
-      </div>
-    </div>
-  );
-}
 
 // ─── Notification Bell ────────────────────────────────────────────────────────
-function NotificationBell({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
+function NotificationBell({ onNavigate, configuracoes }: { onNavigate: (v: ViewId) => void; configuracoes: ConfiguracoesData }) {
   const { produtos, alertasCount } = useProdutos();
+  const { pedidos } = usePedidos();
+  const { agendamentos } = useManutencoes();
+  const [lidas, setLidas] = usePersistentState<string[]>('slm.notificacoes-lidas.v1', []);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -67,15 +62,19 @@ function NotificationBell({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
   const estoqueBaixo = produtos.filter((p) => p.status === 'baixo');
 
   const notifications = [
-    ...semEstoque.map((p) => ({
-      id: `z${p.id}`, icon: '🔴', title: `Sem estoque: ${p.nome}`,
-      sub: `${p.sku} · 0 unidades`, view: 'alertas' as ViewId,
-    })),
-    ...estoqueBaixo.map((p) => ({
-      id: `b${p.id}`, icon: '🟡', title: `Estoque baixo: ${p.nome}`,
-      sub: `${p.sku} · ${p.estoque} un. (mín: ${p.estoqueMinimo})`, view: 'alertas' as ViewId,
-    })),
-  ];
+    ...(configuracoes.alertaEstoque ? [
+      ...semEstoque.map((p) => ({ id: `z${p.id}`, icon: '🔴', title: `Sem estoque: ${p.nome}`, sub: `${p.sku} · 0 unidades`, view: 'alertas' as ViewId })),
+      ...estoqueBaixo.map((p) => ({ id: `b${p.id}`, icon: '🟡', title: `Estoque baixo: ${p.nome}`, sub: `${p.sku} · ${p.estoque} un. (mín: ${p.estoqueMinimo})`, view: 'alertas' as ViewId })),
+    ] : []),
+    ...(configuracoes.novaVenda ? pedidos.filter((p) => p.createdAt).slice(0, 10).map((p: Pedido) => ({
+      id: `v${p.id}`, icon: '🛒', title: `Nova venda #${p.id}`, sub: `${p.cliente} · R$ ${p.total.toFixed(2).replace('.', ',')}`, view: 'vendas' as ViewId,
+    })) : []),
+    ...(configuracoes.novoAgendamento ? agendamentos.filter((a) => a.createdAt && a.origem === 'cliente').slice(-10).map((a: AgendamentoManutencao) => ({
+      id: `m${a.id}`, icon: '🔧', title: `Novo agendamento: ${a.cliente}`, sub: `${a.date} · ${a.hora} · ${a.servico}`, view: 'agenda' as ViewId,
+    })) : []),
+  ].sort((a, b) => b.id.localeCompare(a.id));
+  const unreadNotifications = notifications.filter((item) => !lidas.includes(item.id));
+  const unreadCount = unreadNotifications.length;
 
   return (
     <div className="admin-notifications relative" ref={ref}>
@@ -84,9 +83,9 @@ function NotificationBell({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
         className="relative w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50 transition-colors"
       >
         🔔
-        {alertasCount > 0 && (
+        {unreadCount > 0 && (
           <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
-            {alertasCount > 9 ? '9+' : alertasCount}
+            {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
       </button>
@@ -95,23 +94,23 @@ function NotificationBell({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
         <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl border border-slate-200 shadow-2xl z-50 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
             <div className="text-sm font-bold text-slate-800">Notificações</div>
-            {alertasCount > 0 && (
+            {unreadCount > 0 && (
               <span className="text-[10px] font-bold bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
-                {alertasCount} alertas
+                {unreadCount} novas
               </span>
             )}
           </div>
           <div className="max-h-72 overflow-y-auto">
-            {notifications.length === 0 ? (
+            {unreadNotifications.length === 0 ? (
               <div className="text-center py-10 text-slate-400">
                 <div className="text-3xl mb-2">✅</div>
-                <div className="text-sm">Nenhuma notificação</div>
+                <div className="text-sm">Nenhuma notificação nova</div>
               </div>
             ) : (
-              notifications.map((n) => (
+              unreadNotifications.map((n) => (
                 <button
                   key={n.id}
-                  onClick={() => { setOpen(false); onNavigate(n.view); }}
+                  onClick={() => { setLidas((current) => [...new Set([...current, n.id])]); setOpen(false); onNavigate(n.view); }}
                   className="w-full flex items-start gap-3 px-4 py-3 hover:bg-slate-50 transition-colors text-left border-b border-slate-50 last:border-0"
                 >
                   <span className="text-base shrink-0 mt-0.5">{n.icon}</span>
@@ -125,7 +124,7 @@ function NotificationBell({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
           </div>
           <div className="px-4 py-2.5 border-t border-slate-100">
             <button
-              onClick={() => { setOpen(false); onNavigate('alertas'); }}
+              onClick={() => { setLidas((current) => [...new Set([...current, ...unreadNotifications.map((item) => item.id)])]); setOpen(false); onNavigate('alertas'); }}
               className="w-full text-center text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors"
             >
               Ver todos os alertas →
@@ -138,7 +137,7 @@ function NotificationBell({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
 }
 
 // ─── Admin Search ─────────────────────────────────────────────────────────────
-function AdminSearch({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
+function AdminSearch({ onNavigate }: { onNavigate: (v: ViewId, productId?: number) => void }) {
   const { produtos } = useProdutos();
   const [search, setSearch] = useState('');
   const [open, setOpen] = useState(false);
@@ -184,7 +183,7 @@ function AdminSearch({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
               {matchedProdutos.map((p) => (
                 <button
                   key={p.id}
-                  onClick={() => { setOpen(false); setSearch(''); onNavigate('produtos'); }}
+                  onClick={() => { setOpen(false); setSearch(''); onNavigate('produtos', p.id); }}
                   className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-blue-50 transition-colors text-left"
                 >
                   <div className="w-8 h-8 rounded-md overflow-hidden bg-slate-100 shrink-0">
@@ -210,7 +209,7 @@ function AdminSearch({ onNavigate }: { onNavigate: (v: ViewId) => void }) {
 }
 
 // ─── Admin Header ─────────────────────────────────────────────────────────────
-function AdminHeader({ activeView, onNavigate, onToggleSidebar }: { activeView: ViewId; onNavigate: (v: ViewId) => void; onToggleSidebar: () => void }) {
+function AdminHeader({ activeView, onNavigate, onToggleSidebar, configuracoes }: { activeView: ViewId; onNavigate: (v: ViewId, productId?: number) => void; onToggleSidebar: () => void; configuracoes: ConfiguracoesData }) {
   const { user, logout } = useAuth();
   const [userOpen, setUserOpen] = useState(false);
 
@@ -228,7 +227,7 @@ function AdminHeader({ activeView, onNavigate, onToggleSidebar }: { activeView: 
       <h1 className="text-lg font-bold text-slate-800 w-40 shrink-0">{viewTitles[activeView] ?? 'Admin'}</h1>
       <AdminSearch onNavigate={onNavigate} />
       <div className="admin-header-spacer flex-1" />
-      <NotificationBell onNavigate={onNavigate} />
+      <NotificationBell onNavigate={onNavigate} configuracoes={configuracoes} />
       {/* User */}
       <div className="admin-user-menu relative">
         <button onClick={() => setUserOpen((o) => !o)} className="flex items-center gap-2 px-2 py-1 rounded-lg hover:bg-slate-50 transition-colors">
@@ -258,12 +257,13 @@ function renderAdminView(
   view: ViewId,
   onNavigate: (view: ViewId) => void,
   configuracoes: ConfiguracoesData,
-  onSaveConfiguracoes: (configuracoes: ConfiguracoesData) => void
+  onSaveConfiguracoes: (configuracoes: ConfiguracoesData) => void,
+  focusProductId: number | null
 ) {
   switch (view) {
     case 'dashboard': return <Dashboard onNavigate={onNavigate} />;
     case 'estoque': return <Estoque />;
-    case 'produtos': return <Produtos />;
+    case 'produtos': return <Produtos focusProductId={focusProductId} />;
     case 'vendas': return <Vendas />;
     case 'clientes': return <Clientes />;
     case 'manutencoes': return <Manutencoes />;
@@ -272,18 +272,20 @@ function renderAdminView(
     case 'relatorios': return <Relatorios />;
     case 'configuracoes':
       return <Configuracoes configuracoes={configuracoes} onSave={onSaveConfiguracoes} />;
-    default: return <Placeholder title={viewTitles[view] ?? String(view)} />;
+    default: return <Dashboard onNavigate={onNavigate} />;
   }
 }
 
 // ─── Admin App ────────────────────────────────────────────────────────────────
 function AdminApp() {
   const [activeView, setActiveView] = useState<ViewId>('dashboard');
-  const [configuracoes, setConfiguracoes] = useState(configuracoesIniciais);
+  const [configuracoes, setConfiguracoes] = usePersistentState<ConfiguracoesData>('slm.configuracoes.v1', configuracoesIniciais);
+  const [focusProductId, setFocusProductId] = useState<number | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(() => window.innerWidth >= 768);
 
-  const navigateAdmin = (view: ViewId) => {
+  const navigateAdmin = (view: ViewId, productId?: number) => {
     setActiveView(view);
+    setFocusProductId(productId ?? null);
     if (window.innerWidth < 768) setSidebarOpen(false);
   };
 
@@ -301,9 +303,9 @@ function AdminApp() {
         <Sidebar activeView={activeView} onNavigate={navigateAdmin} />
       </div>
       <div className="admin-workspace flex-1 min-w-0 flex flex-col overflow-hidden">
-        <AdminHeader activeView={activeView} onNavigate={navigateAdmin} onToggleSidebar={() => setSidebarOpen((open) => !open)} />
+        <AdminHeader activeView={activeView} onNavigate={navigateAdmin} onToggleSidebar={() => setSidebarOpen((open) => !open)} configuracoes={configuracoes} />
         <main className="admin-content flex-1 min-w-0 overflow-y-auto overflow-x-hidden">
-          {renderAdminView(activeView, navigateAdmin, configuracoes, setConfiguracoes)}
+          {renderAdminView(activeView, navigateAdmin, configuracoes, setConfiguracoes, focusProductId)}
         </main>
       </div>
     </div>
