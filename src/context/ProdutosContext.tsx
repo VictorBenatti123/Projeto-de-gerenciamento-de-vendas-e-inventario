@@ -115,7 +115,7 @@ export function ProdutosProvider({ children }: { children: ReactNode }) {
         produtoId: product.id,
         produtoNome: product.nome,
         tipo: 'venda',
-        quantidade,
+        quantidade: quantity,
         estoqueAnterior: product.estoque,
         estoqueAtual: nextStock,
         motivo: nextStock === 0 && quantity > product.estoque

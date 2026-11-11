@@ -209,7 +209,7 @@ export default function Clientes() {
               {customerOrders(history).map((pedido) => (
                 <div key={pedido.id} className="flex justify-between border-b border-slate-100 py-2 text-sm"><span className="text-slate-600">Pedido #{pedido.id}</span><span className="font-semibold text-slate-800">R${pedido.total.toLocaleString('pt-BR')}</span></div>
               ))}
-              {customerOrders(history.nome).length === 0 && <p className="text-sm text-slate-400">Nenhuma compra detalhada encontrada.</p>}
+              {customerOrders(history).length === 0 && <p className="text-sm text-slate-400">Nenhuma compra detalhada encontrada.</p>}
             </div>
             <div>
               <h3 className="mb-2 text-sm font-bold text-slate-700">Manutenções</h3>
