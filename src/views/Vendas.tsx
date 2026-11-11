@@ -199,6 +199,7 @@ export default function Vendas() {
             ))}
           </tbody>
         </table>
+        </div>
 
         {filtered.length === 0 && (
           <div className="text-center py-12 text-slate-400 text-sm">Nenhuma venda encontrada.</div>

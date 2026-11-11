@@ -175,6 +175,7 @@ export default function Clientes() {
             ))}
           </tbody>
         </table>
+        </div>
 
         {filtered.length === 0 && (
           <div className="text-center py-12 text-slate-400 text-sm">Nenhum cliente encontrado.</div>
