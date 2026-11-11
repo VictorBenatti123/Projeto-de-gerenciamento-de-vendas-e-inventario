@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { clientes, type Cliente } from '../data';
+import { useAuth } from '../context/AuthContext';
+import { usePersistentState } from '../utils/storage';
 import { useManutencoes } from '../context/ManutencoesContext';
 import { usePedidos } from '../context/PedidosContext';
 import AdminModal, { fieldClass } from '../components/AdminModal';
@@ -7,7 +9,20 @@ import AdminModal, { fieldClass } from '../components/AdminModal';
 export default function Clientes() {
   const { pedidos } = usePedidos();
   const { agendamentos } = useManutencoes();
-  const [items, setItems] = useState(clientes);
+  const { users, updateUser } = useAuth();
+  const [manualClientes, setManualClientes] = usePersistentState<Cliente[]>('slm.clientes.v1', clientes);
+  const registeredCustomers: Cliente[] = users.filter((user) => user.role === 'customer').map((user) => {
+    const numericId = Number(user.id);
+    const stableId = Number.isSafeInteger(numericId) && numericId > 0
+      ? 100000 + numericId
+      : 1000000 + [...user.id].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) >>> 0, 7) % 8000000;
+    return { id: stableId, userId: user.id, nome: user.name, email: user.email,
+      telefone: user.telefone ?? '', totalCompras: 0, ultimaVisita: '—', bicicletas: user.bicicletas ?? 0 };
+  });
+  const items = [
+    ...manualClientes.filter((client) => !users.some((user) => user.role === 'customer' && user.email.toLowerCase() === client.email.toLowerCase())),
+    ...registeredCustomers,
+  ];
   const [search, setSearch] = useState('');
   const [editing, setEditing] = useState<Cliente | null | 'new'>(null);
   const [history, setHistory] = useState<Cliente | null>(null);
@@ -19,10 +34,12 @@ export default function Clientes() {
   );
 
   const validOrders = pedidos.filter((pedido) => pedido.status !== 'cancelado');
-  const customerOrders = (name: string) =>
-    validOrders.filter((pedido) => pedido.cliente.toLowerCase() === name.toLowerCase());
-  const customerTotal = (name: string) =>
-    customerOrders(name).reduce((sum, pedido) => sum + pedido.total, 0);
+  const customerOrders = (client: Cliente) => validOrders.filter((pedido) => {
+    if (client.userId && pedido.clienteId) return pedido.clienteId === client.userId;
+    if (pedido.email && client.email) return pedido.email.toLowerCase() === client.email.toLowerCase();
+    return pedido.cliente.toLowerCase() === client.nome.toLowerCase();
+  });
+  const customerTotal = (client: Cliente) => customerOrders(client).reduce((sum, pedido) => sum + pedido.total, 0);
   const revenueByCustomer = validOrders.reduce<Record<string, number>>((acc, pedido) => {
     acc[pedido.cliente] = (acc[pedido.cliente] ?? 0) + pedido.total;
     return acc;
@@ -42,15 +59,21 @@ export default function Clientes() {
       bicicletas: Number(form.get('bicicletas')),
     };
     if (editing && editing !== 'new') {
-      setItems((prev) => prev.map((cliente) => cliente.id === editing.id ? { ...cliente, ...values } : cliente));
+      if (editing.userId) {
+        const duplicate = users.some((user) => user.id !== editing.userId && user.role === 'customer' && user.email.toLowerCase() === values.email.toLowerCase());
+        if (duplicate) { window.alert('Este e-mail já está vinculado a outro cliente.'); return; }
+        updateUser(editing.userId, { name: values.nome, email: values.email, telefone: values.telefone, bicicletas: values.bicicletas });
+      } else {
+        setManualClientes((prev) => prev.map((client) => client.id === editing.id ? { ...client, ...values } : client));
+      }
     } else {
-      const novo: Cliente = {
-        ...values,
-        id: Math.max(...items.map((cliente) => cliente.id)) + 1,
-        totalCompras: 0,
-        ultimaVisita: new Date().toLocaleDateString('pt-BR'),
-      };
-      setItems((prev) => [novo, ...prev]);
+      if (manualClientes.some((client) => client.email.toLowerCase() === values.email.toLowerCase()) || users.some((user) => user.email.toLowerCase() === values.email.toLowerCase())) {
+        window.alert('Já existe um cliente com este e-mail.');
+        return;
+      }
+      const novo: Cliente = { ...values, id: Math.max(0, ...items.map((client) => client.id)) + 1,
+        totalCompras: 0, ultimaVisita: new Date().toLocaleDateString('pt-BR') };
+      setManualClientes((prev) => [novo, ...prev]);
     }
     setEditing(null);
   };
@@ -126,10 +149,10 @@ export default function Clientes() {
                 </td>
                 <td className="px-5 py-3 text-sm text-slate-700 font-medium">{c.bicicletas}</td>
                 <td className="px-5 py-3 text-sm font-bold text-emerald-600">
-                  R${customerTotal(c.nome).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  R${customerTotal(c).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </td>
                 <td className="px-5 py-3 text-xs text-slate-500">
-                  {customerOrders(c.nome)[0]?.data.split(' ')[0] ?? c.ultimaVisita}
+                  {customerOrders(c)[0]?.data.split(' ')[0] ?? c.ultimaVisita}
                 </td>
                 <td className="px-5 py-3">
                   <div className="flex items-center gap-2">
@@ -178,22 +201,22 @@ export default function Clientes() {
         <AdminModal title={`Histórico de ${history.nome}`} subtitle={`${history.email} · ${history.telefone}`} onClose={() => setHistory(null)}>
           <div className="space-y-5 p-6">
             <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl bg-emerald-50 p-4"><div className="text-xs text-emerald-700">Total gasto</div><div className="text-xl font-bold text-emerald-700">R${customerTotal(history.nome).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div></div>
+              <div className="rounded-xl bg-emerald-50 p-4"><div className="text-xs text-emerald-700">Total gasto</div><div className="text-xl font-bold text-emerald-700">R${customerTotal(history).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div></div>
               <div className="rounded-xl bg-blue-50 p-4"><div className="text-xs text-blue-700">Bicicletas</div><div className="text-xl font-bold text-blue-700">{history.bicicletas}</div></div>
             </div>
             <div>
               <h3 className="mb-2 text-sm font-bold text-slate-700">Compras relacionadas</h3>
-              {customerOrders(history.nome).map((pedido) => (
+              {customerOrders(history).map((pedido) => (
                 <div key={pedido.id} className="flex justify-between border-b border-slate-100 py-2 text-sm"><span className="text-slate-600">Pedido #{pedido.id}</span><span className="font-semibold text-slate-800">R${pedido.total.toLocaleString('pt-BR')}</span></div>
               ))}
               {customerOrders(history.nome).length === 0 && <p className="text-sm text-slate-400">Nenhuma compra detalhada encontrada.</p>}
             </div>
             <div>
               <h3 className="mb-2 text-sm font-bold text-slate-700">Manutenções</h3>
-              {agendamentos.filter((item) => item.cliente === history.nome).map((item) => (
+              {agendamentos.filter((item) => history.userId && item.clienteId ? item.clienteId === history.userId : item.cliente === history.nome).map((item) => (
                 <div key={item.id} className="border-b border-slate-100 py-2"><div className="text-sm font-medium text-slate-700">{item.servico}</div><div className="text-xs text-slate-400">{item.bicicleta} · {item.date} às {item.hora}</div></div>
               ))}
-              {!agendamentos.some((item) => item.cliente === history.nome) && <p className="text-sm text-slate-400">Nenhuma manutenção registrada.</p>}
+              {!agendamentos.some((item) => history.userId && item.clienteId ? item.clienteId === history.userId : item.cliente === history.nome) && <p className="text-sm text-slate-400">Nenhuma manutenção registrada.</p>}
             </div>
           </div>
         </AdminModal>
