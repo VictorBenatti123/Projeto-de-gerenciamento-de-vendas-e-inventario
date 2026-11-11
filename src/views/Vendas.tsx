@@ -15,7 +15,7 @@ const statusLabels: Record<string, string> = { pago: 'Pago', enviado: 'Enviado',
 
 export default function Vendas() {
   const { pedidos: items, adicionarPedido, atualizarStatusPedido } = usePedidos();
-  const { produtos, registrarSaida } = useProdutos();
+  const { produtos, registrarSaida, registrarEstorno } = useProdutos();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
   const [selected, setSelected] = useState<Pedido | null>(null);
@@ -250,6 +250,17 @@ export default function Vendas() {
                 <span className="text-xl font-bold text-slate-800">R${selected.total.toLocaleString('pt-BR')}</span>
               </div>
             </div>
+            {selected.telefone && <div className="text-sm text-slate-600"><span className="font-medium text-slate-800">Telefone:</span> {selected.telefone}</div>}
+            {selected.enderecoEntrega && (
+              <div className="rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
+                <div className="mb-1 font-semibold text-slate-800">Endereço de entrega</div>
+                {selected.enderecoEntrega.logradouro}, {selected.enderecoEntrega.numero}
+                {selected.enderecoEntrega.complemento ? ' · ' + selected.enderecoEntrega.complemento : ''}
+                <br />{selected.enderecoEntrega.bairro}, {selected.enderecoEntrega.cidade} - {selected.enderecoEntrega.estado}
+                <br />CEP {selected.enderecoEntrega.cep}
+              </div>
+            )}
+            {selected.parcelas && selected.parcelas > 1 && <div className="text-sm text-slate-600">Parcelamento selecionado: {selected.parcelas}x (simulação)</div>}
             <div className="space-y-3 border-t border-slate-100 pt-4">
               <label className="block text-xs font-semibold text-slate-600">
                 Atualizar status do pedido
@@ -261,10 +272,33 @@ export default function Vendas() {
                   <option value="processando">Processando</option>
                   <option value="pago">Pago</option>
                   <option value="enviado">Enviado</option>
-                  <option value="cancelado">Cancelado</option>
+ 
                 </select>
               </label>
-              <p className="text-[11px] leading-relaxed text-amber-700">A atualização manual não confirma pagamentos nem realiza estornos automaticamente. Essas operações exigem integração financeira e backend.</p>
+              {selected.status !== 'cancelado' && (
+                <button onClick={() => {
+                  const detailed = selected.itensDetalhados?.map((item) => ({ produtoId: item.produtoId, quantidade: item.quantidade }));
+                  const legacy = selected.itens.map((raw) => {
+                    const match = raw.match(/^(\d+)x\s+(.+)$/i);
+                    const quantity = match ? Number(match[1]) : 1;
+                    const name = (match ? match[2] : raw).trim().toLocaleLowerCase('pt-BR');
+                    const product = produtos.find((candidate) => candidate.nome.toLocaleLowerCase('pt-BR') === name);
+                    return product ? { produtoId: product.id, quantidade: quantity } : null;
+                  });
+                  const restockItems = detailed ?? legacy.filter((item): item is { produtoId: number; quantidade: number } => item !== null);
+                  if (restockItems.length === 0 || (!detailed && restockItems.length !== legacy.length)) {
+                    window.alert('Não foi possível identificar todos os produtos deste pedido. O cancelamento foi bloqueado para evitar divergência no estoque.');
+                    return;
+                  }
+                  const result = registrarEstorno(restockItems, selected.id);
+                  if (!result.ok) { window.alert(result.error ?? 'Não foi possível estornar o estoque.'); return; }
+                  atualizarStatusPedido(selected.id, 'cancelado');
+                  setSelected({ ...selected, status: 'cancelado' });
+                }} className="w-full rounded-lg bg-red-50 py-2 text-sm font-semibold text-red-700 hover:bg-red-100">
+                  Cancelar pedido e devolver ao estoque
+                </button>
+              )}
+              <p className="text-[11px] leading-relaxed text-amber-700">O status de pagamento só deve ser alterado após confirmação externa. Este sistema ainda não possui gateway integrado.</p>
               <button onClick={() => setSelected(null)} className="w-full py-2 bg-slate-100 text-slate-700 text-sm font-semibold rounded-lg hover:bg-slate-200 transition-colors">Fechar</button>
             </div>
           </div>

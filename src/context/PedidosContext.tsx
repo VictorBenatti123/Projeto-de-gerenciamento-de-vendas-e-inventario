@@ -17,6 +17,12 @@ export interface ItemPedido {
 export interface Pedido extends Venda {
   clienteId?: string;
   email?: string;
+  telefone?: string;
+  parcelas?: number;
+  enderecoEntrega?: {
+    cep: string; logradouro: string; numero: string; complemento: string;
+    bairro: string; cidade: string; estado: string;
+  };
   origem: 'site' | 'admin';
   formaPagamento?: FormaPagamento;
   finalCartao?: string;

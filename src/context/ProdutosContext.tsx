@@ -38,6 +38,7 @@ interface ProdutosContextValue {
   removerProduto: (id: number) => void;
   atualizarEstoque: (id: number, novaQtd: number) => boolean;
   registrarSaida: (itens: ItemSaida[], motivo: string, permitirSemEstoque?: boolean) => ResultadoMovimentacao;
+  registrarEstorno: (itens: ItemSaida[], pedidoId: number) => ResultadoMovimentacao;
   toggleVitrine: (id: number) => void;
   estoqueBaixo: number;
   semEstoque: number;
@@ -130,6 +131,36 @@ export function ProdutosProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   };
 
+  const registrarEstorno = (itens: ItemSaida[], pedidoId: number): ResultadoMovimentacao => {
+    if (movimentacoes.some((movement) => movement.tipo === 'estorno' && movement.pedidoId === pedidoId)) {
+      return { ok: false, error: 'O estoque deste pedido já foi estornado.' };
+    }
+    const quantities = new Map<number, number>();
+    for (const item of itens) {
+      if (!Number.isInteger(item.quantidade) || item.quantidade <= 0) return { ok: false, error: 'Quantidade inválida para estorno.' };
+      quantities.set(item.produtoId, (quantities.get(item.produtoId) ?? 0) + item.quantidade);
+    }
+    for (const id of quantities.keys()) {
+      if (!produtos.some((product) => product.id === id)) return { ok: false, error: 'Não foi possível localizar um produto do pedido para estorno.' };
+    }
+    const movements: MovimentacaoEstoque[] = [];
+    const nextProducts = produtos.map((product) => {
+      const quantity = quantities.get(product.id);
+      if (!quantity) return product;
+      const nextStock = product.estoque + quantity;
+      movements.push({
+        id: Math.max(0, ...movimentacoes.map((item) => item.id), ...movements.map((item) => item.id)) + 1,
+        produtoId: product.id, produtoNome: product.nome, tipo: 'estorno', quantidade,
+        estoqueAnterior: product.estoque, estoqueAtual: nextStock,
+        motivo: 'Estorno do pedido #' + pedidoId, data: new Date().toISOString(), pedidoId,
+      });
+      return { ...product, estoque: nextStock, status: computeStatus(nextStock, product.estoqueMinimo) };
+    });
+    setProdutos(nextProducts);
+    setMovimentacoes((current) => [...movements, ...current].slice(0, 500));
+    return { ok: true };
+  };
+
   const toggleVitrine = (id: number) => {
     setProdutos((current) => current.map((product) =>
       product.id === id ? { ...product, naVitrine: !product.naVitrine } : product
@@ -142,7 +173,7 @@ export function ProdutosProvider({ children }: { children: ReactNode }) {
 
   return (
     <ProdutosContext.Provider value={{
-      produtos, movimentacoes, addProduto, removerProduto, atualizarEstoque, registrarSaida,
+      produtos, movimentacoes, addProduto, removerProduto, atualizarEstoque, registrarSaida, registrarEstorno,
       toggleVitrine, estoqueBaixo, semEstoque, alertasCount,
     }}>
       {children}

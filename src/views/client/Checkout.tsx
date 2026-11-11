@@ -268,6 +268,9 @@ export default function Checkout({ onBack, onSuccess }: Props) {
 
               {payMethod === 'cartao' && (
                 <div className="space-y-4">
+                  <div role="status" className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                    Este site ainda não possui integração com operadora de cartão. Não informe dados reais do cartão. O pedido será registrado como aguardando pagamento.
+                  </div>
                   <div>
                     <label className={labelClass}>Nome no cartão</label>
                     <input maxLength={100} value={form.cardName} onChange={set('cardName')} placeholder="Como impresso no cartão" className={inputClass} required={payMethod === 'cartao'} />
