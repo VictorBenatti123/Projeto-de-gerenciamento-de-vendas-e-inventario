@@ -37,9 +37,9 @@ export default function ProdutoDetalhe({ produtoId, onBack, onViewProduto, onChe
   const related = produtos.filter((p) => p.naVitrine && p.categoria === produto.categoria && p.id !== produto.id).slice(0, 4);
 
   const handleAddToCart = () => {
-    addItem(produto, qty);
-    setAddedFeedback(true);
-    setTimeout(() => setAddedFeedback(false), 2000);
+    const added = addItem(produto, qty);
+    setAddedFeedback(added);
+    if (added) setTimeout(() => setAddedFeedback(false), 2000);
   };
 
   return (

@@ -7,7 +7,7 @@ interface Props {
 
 export default function CartDrawer({ onCheckout }: Props) {
   const { user } = useAuth();
-  const { items, isOpen, closeCart, removeItem, updateQty, total, count, clearCart } = useCart();
+  const { items, isOpen, closeCart, removeItem, updateQty, total, count, clearCart, notice, clearNotice } = useCart();
 
   return (
     <>
@@ -43,6 +43,8 @@ export default function CartDrawer({ onCheckout }: Props) {
           </div>
         </div>
 
+        {notice && <div role="alert" className="mx-6 mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800"><div className="flex items-start justify-between gap-2"><span>{notice}</span><button type="button" onClick={clearNotice} aria-label="Fechar aviso">✕</button></div></div>}
+
         {/* Items */}
         <div className="flex-1 overflow-y-auto py-4 px-6 space-y-4">
           {items.length === 0 ? (
@@ -71,7 +73,8 @@ export default function CartDrawer({ onCheckout }: Props) {
                       <span className="text-sm font-semibold text-slate-800 w-6 text-center">{quantidade}</span>
                       <button
                         onClick={() => updateQty(produto.id, quantidade + 1)}
-                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:bg-slate-50 rounded-r-lg text-sm font-bold transition-colors"
+                        disabled={quantidade >= produto.estoque}
+                        className="w-7 h-7 flex items-center justify-center text-slate-500 hover:bg-slate-50 rounded-r-lg text-sm font-bold transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         +
                       </button>

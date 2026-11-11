@@ -8,6 +8,7 @@ export interface AgendamentoManutencao extends Manutencao {
   observacoes?: string;
   origem: 'cliente' | 'admin';
   clienteId?: string;
+  createdAt?: string;
 }
 
 type NovoAgendamento = Omit<AgendamentoManutencao, 'id'>;
@@ -41,7 +42,7 @@ export function ManutencoesProvider({ children }: { children: ReactNode }) {
   const adicionarAgendamento = (agendamento: NovoAgendamento) => {
     if (!horarioDisponivel(agendamento.date, agendamento.hora)) return false;
     const id = Math.max(0, ...agendamentos.map((item) => item.id)) + 1;
-    setAgendamentos((current) => sortAgendamentos([...current, { ...agendamento, id }]));
+    setAgendamentos((current) => sortAgendamentos([...current, { ...agendamento, id, createdAt: new Date().toISOString() }]));
     return true;
   };
 

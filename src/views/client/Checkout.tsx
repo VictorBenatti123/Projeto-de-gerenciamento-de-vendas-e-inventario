@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { usePedidos } from '../../context/PedidosContext';
+import { useProdutos } from '../../context/ProdutosContext';
+import { readStoredValue } from '../../utils/storage';
 import {
   formatCardExpiry,
   formatCardNumber,
@@ -22,6 +24,8 @@ export default function Checkout({ onBack, onSuccess }: Props) {
   const { items, total, clearCart } = useCart();
   const { user } = useAuth();
   const { adicionarPedido } = usePedidos();
+  const { produtos, registrarSaida } = useProdutos();
+  const [checkoutError, setCheckoutError] = useState('');
   const [payMethod, setPayMethod] = useState<PaymentMethod>('cartao');
   const [loading, setLoading] = useState(false);
   const [step, setStep] = useState<'form' | 'success'>('form');
@@ -55,8 +59,31 @@ export default function Checkout({ onBack, onSuccess }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (items.length === 0) return;
     setLoading(true);
-    await new Promise((r) => setTimeout(r, 1500));
+    setCheckoutError('');
+    const settings = readStoredValue<{ permitirVendaSemEstoque?: boolean }>('slm.configuracoes.v1', {});
+    const currentItems = items.map(({ produto, quantidade }) => {
+      const currentProduct = produtos.find((item) => item.id === produto.id);
+      return currentProduct ? { produto: currentProduct, quantidade } : null;
+    });
+    if (currentItems.some((item) => item === null)) {
+      setCheckoutError('Um ou mais produtos não estão mais disponíveis. Atualize o carrinho.');
+      setLoading(false);
+      return;
+    }
+    const itemsToSell = currentItems.filter((item): item is { produto: (typeof produtos)[number]; quantidade: number } => item !== null);
+    const stockResult = registrarSaida(
+      itemsToSell.map(({ produto, quantidade }) => ({ produtoId: produto.id, quantidade })),
+      'Venda pelo site',
+      settings.permitirVendaSemEstoque === true
+    );
+    if (!stockResult.ok) {
+      setCheckoutError(stockResult.error ?? 'Não foi possível validar o estoque.');
+      setLoading(false);
+      return;
+    }
+    await new Promise((r) => setTimeout(r, 300));
     const orderTotal = payMethod === 'pix' ? total * 0.95 : total;
     adicionarPedido({
       clienteId: user?.id,
@@ -65,7 +92,11 @@ export default function Checkout({ onBack, onSuccess }: Props) {
       total: orderTotal,
       status: payMethod === 'boleto' ? 'processando' : 'pago',
       data: new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' }),
-      itens: items.map(({ produto, quantidade }) => `${quantidade}x ${produto.nome}`),
+      itens: itemsToSell.map(({ produto, quantidade }) => `${quantidade}x ${produto.nome}`),
+      itensDetalhados: itemsToSell.map(({ produto, quantidade }) => ({
+        produtoId: produto.id, sku: produto.sku, nome: produto.nome,
+        categoria: produto.categoria, quantidade, precoUnitario: produto.preco,
+      })),
       origem: 'site',
       formaPagamento: payMethod,
       finalCartao: payMethod === 'cartao' ? form.cardNumber.replace(/\D/g, '').slice(-4) : undefined,
@@ -100,6 +131,7 @@ export default function Checkout({ onBack, onSuccess }: Props) {
       <h1 className="text-2xl font-bold text-slate-900 mb-8">Finalizar Pedido</h1>
 
       <form onSubmit={handleSubmit}>
+        {checkoutError && <div role="alert" className="mb-5 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{checkoutError}</div>}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Left: forms */}
           <div className="lg:col-span-2 space-y-8">
