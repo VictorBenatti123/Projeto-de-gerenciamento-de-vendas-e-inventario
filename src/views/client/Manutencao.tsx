@@ -13,8 +13,6 @@ const servicos = [
   { id: 'limpeza', label: 'Limpeza e Lubrificação', desc: 'Limpeza completa e lubrificação da transmissão', preco: 'R$40,00', icon: '✨' },
 ];
 
-const timeSlots = ['09:00', '09:30', '10:00', '10:30', '11:00', '11:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30'];
-
 const statusStyles = {
   concluido: { label: 'Concluído', className: 'bg-emerald-50 text-emerald-700' },
   concluir: { label: 'Em andamento', className: 'bg-amber-50 text-amber-700' },
@@ -23,7 +21,7 @@ const statusStyles = {
 
 export default function Manutencao() {
   const { user } = useAuth();
-  const { agendamentos, adicionarAgendamento, removerAgendamento, horarioDisponivel } = useManutencoes();
+  const { agendamentos, adicionarAgendamento, removerAgendamento, horarioDisponivel, horariosDisponiveis } = useManutencoes();
   const [selectedServico, setSelectedServico] = useState('');
   const [selectedDate, setSelectedDate] = useState('');
   const [selectedTime, setSelectedTime] = useState('');
@@ -35,11 +33,12 @@ export default function Manutencao() {
   const minDate = new Date();
   minDate.setDate(minDate.getDate() + 1);
   const minDateStr = `${minDate.getFullYear()}-${String(minDate.getMonth() + 1).padStart(2, '0')}-${String(minDate.getDate()).padStart(2, '0')}`;
-  const horariosOcupados = new Set(
-    agendamentos
-      .filter((agendamento) => agendamento.date === selectedDate)
-      .map((agendamento) => agendamento.hora)
-  );
+  const servicoSelecionado = servicos.find((item) => item.id === selectedServico);
+  const horariosDisponiveisParaData = selectedDate && servicoSelecionado
+    ? horariosDisponiveis(selectedDate, servicoSelecionado.label)
+    : [];
+  const dataSelecionada = selectedDate ? new Date(`${selectedDate}T12:00:00`) : null;
+  const domingoSelecionado = dataSelecionada?.getDay() === 0;
   const meusAgendamentos = agendamentos.filter(
     (agendamento) => agendamento.origem === 'cliente' && (agendamento.clienteId ? agendamento.clienteId === user?.id : agendamento.cliente === user?.name)
   );
@@ -51,7 +50,7 @@ export default function Manutencao() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedServico || !selectedDate || !selectedTime) return;
-    if (!horarioDisponivel(selectedDate, selectedTime)) {
+    if (!horarioDisponivel(selectedDate, selectedTime, servicos.find((item) => item.id === selectedServico)?.label ?? selectedServico)) {
       window.alert('Este horário acabou de ser reservado. Escolha outro horário.');
       setSelectedTime('');
       return;
@@ -249,7 +248,7 @@ export default function Manutencao() {
 
           {/* Date & time */}
           <div>
-            <h2 className="text-lg font-bold text-slate-900 mb-4">3. Data e horário</h2>
+            <h2 className="text-lg font-bold text-slate-900 mb-2">3. Data e horário</h2>\n            <p className="mb-4 text-sm text-slate-500">Funcionamento: segunda a sexta, 09:00–19:00; sábado, 09:00–16:00; domingo, fechado. A duração do serviço é considerada na disponibilidade.</p>
             <div className="bg-white rounded-2xl border border-slate-200 p-6 space-y-5">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1.5">Data *</label>
@@ -265,26 +264,30 @@ export default function Manutencao() {
               {selectedDate && (
                 <div>
                   <label className="block text-sm font-medium text-slate-700 mb-3">Horário disponível *</label>
-                  <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
-                    {timeSlots.map((t) => (
-                      <button
-                        key={t}
-                        type="button"
-                        disabled={horariosOcupados.has(t)}
-                        onClick={() => setSelectedTime(t)}
-                        title={horariosOcupados.has(t) ? 'Horário indisponível' : undefined}
-                        className={`py-2 px-3 rounded-lg text-sm font-medium border transition-all ${
-                          selectedTime === t
-                            ? 'bg-blue-600 text-white border-blue-600'
-                            : horariosOcupados.has(t)
-                            ? 'cursor-not-allowed border-slate-100 bg-slate-50 text-slate-300 line-through'
-                            : 'border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600'
-                        }`}
-                      >
-                        {t}
-                      </button>
-                    ))}
-                  </div>
+                  {!selectedServico ? (
+                    <p className="text-sm text-slate-500">Selecione um serviço para consultar os horários compatíveis com sua duração.</p>
+                  ) : domingoSelecionado ? (
+                    <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">A oficina não funciona aos domingos. Escolha outro dia.</p>
+                  ) : horariosDisponiveisParaData.length === 0 ? (
+                    <p className="text-sm text-slate-500">Não há horários disponíveis para este serviço nesta data. Escolha outro dia.</p>
+                  ) : (
+                    <div className="grid grid-cols-4 sm:grid-cols-7 gap-2">
+                      {horariosDisponiveisParaData.map((t) => (
+                        <button
+                          key={t}
+                          type="button"
+                          onClick={() => setSelectedTime(t)}
+                          className={`py-2 px-3 rounded-lg text-sm font-medium border transition-all ${
+                            selectedTime === t
+                              ? 'bg-blue-600 text-white border-blue-600'
+                              : 'border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-600'
+                          }`}
+                        >
+                          {t}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

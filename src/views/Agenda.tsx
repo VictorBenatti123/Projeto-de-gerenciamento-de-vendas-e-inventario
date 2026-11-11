@@ -73,20 +73,20 @@ export default function Agenda() {
     const date = String(form.get('date'));
     const hora = String(form.get('hora'));
     if (!horarioDisponivel(date, hora)) {
-      window.alert('Já existe um agendamento neste horário. Escolha outra data ou horário.');
+      window.alert('Horário fora do expediente ou em conflito com outro serviço. Verifique a duração e escolha outro horário.');
       return;
     }
     const created = adicionarAgendamento({
       date,
       hora,
       cliente: String(form.get('cliente')).trim(),
-      servico: String(form.get('servico')).trim(),
+      servico,
       bicicleta: String(form.get('bicicleta')).trim(),
       status: 'iniciar',
       origem: 'admin',
     });
     if (!created) {
-      window.alert('Já existe um agendamento neste horário.');
+      window.alert('Horário indisponível: fora do expediente ou em conflito com outro serviço.');
       return;
     }
     const parsed = new Date(`${date}T12:00:00`);

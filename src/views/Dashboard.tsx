@@ -3,7 +3,7 @@ import type { Manutencao } from '../data';
 import { useManutencoes } from '../context/ManutencoesContext';
 import { usePedidos } from '../context/PedidosContext';
 import { useProdutos } from '../context/ProdutosContext';
-import { addDays, latestDate, parseBrDate, parseIsoDate, toDateKey } from '../utils/analytics';
+import { addDays, parseBrDate, toDateKey } from '../utils/analytics';
 
 const vendaStatusStyles: Record<string, string> = {
   pago: 'bg-emerald-50 text-emerald-700',
@@ -79,10 +79,9 @@ export default function Dashboard({
   const { agendamentos, atualizarStatus, removerAgendamento } = useManutencoes();
   const [period, setPeriod] = useState<'hoje' | 'semana' | 'mes'>('hoje');
 
-  const referenceDate = latestDate([
-    ...pedidos.map((pedido) => parseBrDate(pedido.data)),
-    ...agendamentos.map((agendamento) => parseIsoDate(agendamento.date)),
-  ]);
+  // Os períodos do painel devem acompanhar a data atual, não a data mais recente dos dados de demonstração.
+  const referenceDate = new Date();
+  referenceDate.setHours(12, 0, 0, 0);
   const referenceKey = toDateKey(referenceDate);
   const weekStart = addDays(referenceDate, -referenceDate.getDay());
   const monthStart = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 1, 12);

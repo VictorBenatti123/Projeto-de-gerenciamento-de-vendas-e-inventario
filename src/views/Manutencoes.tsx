@@ -26,7 +26,7 @@ export default function Manutencoes() {
   const handleCreate = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    adicionarAgendamento({
+    const created = adicionarAgendamento({
       date: String(form.get('date')),
       hora: String(form.get('hora')),
       cliente: String(form.get('cliente')).trim(),
@@ -35,6 +35,10 @@ export default function Manutencoes() {
       status: 'iniciar',
       origem: 'admin',
     });
+    if (!created) {
+      window.alert('Não foi possível criar o agendamento. Confira o expediente (segunda a sexta, 09:00–19:00; sábado, 09:00–16:00; domingo fechado) e se o horário conflita com outro serviço.');
+      return;
+    }
     setCreating(false);
   };
 
