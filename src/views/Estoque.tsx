@@ -80,7 +80,7 @@ export default function Estoque() {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full">
+          <table className="w-full min-w-[820px]">
             <thead>
               <tr className="border-b border-slate-100 bg-slate-50/50">
                 {['SKU', 'Produto', 'Categoria', 'Marca', 'Estoque', 'Mín.', 'Status', 'Ações'].map((h) => (

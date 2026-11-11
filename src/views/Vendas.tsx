@@ -14,7 +14,7 @@ const statusStyles: Record<string, string> = {
 const statusLabels: Record<string, string> = { pago: 'Pago', enviado: 'Enviado', processando: 'Processando', cancelado: 'Cancelado' };
 
 export default function Vendas() {
-  const { pedidos: items, adicionarPedido } = usePedidos();
+  const { pedidos: items, adicionarPedido, atualizarStatusPedido } = usePedidos();
   const { produtos, registrarSaida } = useProdutos();
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('todos');
@@ -28,9 +28,9 @@ export default function Vendas() {
     return matchSearch && matchStatus;
   });
   const total = items
-    .filter((venda) => venda.status !== 'cancelado')
+    .filter((venda) => venda.status === 'pago' || venda.status === 'enviado')
     .reduce((sum, venda) => sum + venda.total, 0);
-  const pagos = items.filter((venda) => venda.status === 'pago').reduce((sum, venda) => sum + venda.total, 0);
+  const pagos = total;
   const today = new Date().toLocaleDateString('pt-BR');
 
   const handleCreate = (event: FormEvent<HTMLFormElement>) => {
@@ -147,7 +147,8 @@ export default function Vendas() {
           </button>
         </div>
 
-        <table className="w-full">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[760px]">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50/50">
               {['Pedido', 'Data', 'Cliente', 'Itens', 'Total', 'Status', 'Ações'].map((h) => (
@@ -248,12 +249,23 @@ export default function Vendas() {
                 <span className="text-xl font-bold text-slate-800">R${selected.total.toLocaleString('pt-BR')}</span>
               </div>
             </div>
-            <button
-              onClick={() => setSelected(null)}
-              className="w-full py-2 bg-slate-100 text-slate-700 text-sm font-semibold rounded-lg hover:bg-slate-200 transition-colors"
-            >
-              Fechar
-            </button>
+            <div className="space-y-3 border-t border-slate-100 pt-4">
+              <label className="block text-xs font-semibold text-slate-600">
+                Atualizar status do pedido
+                <select value={selected.status} onChange={(event) => {
+                  const nextStatus = event.target.value as Venda['status'];
+                  atualizarStatusPedido(selected.id, nextStatus);
+                  setSelected({ ...selected, status: nextStatus });
+                }} className={`${fieldClass} mt-1.5 bg-white`}>
+                  <option value="processando">Processando</option>
+                  <option value="pago">Pago</option>
+                  <option value="enviado">Enviado</option>
+                  <option value="cancelado">Cancelado</option>
+                </select>
+              </label>
+              <p className="text-[11px] leading-relaxed text-amber-700">A atualização manual não confirma pagamentos nem realiza estornos automaticamente. Essas operações exigem integração financeira e backend.</p>
+              <button onClick={() => setSelected(null)} className="w-full py-2 bg-slate-100 text-slate-700 text-sm font-semibold rounded-lg hover:bg-slate-200 transition-colors">Fechar</button>
+            </div>
           </div>
         </div>
       )}

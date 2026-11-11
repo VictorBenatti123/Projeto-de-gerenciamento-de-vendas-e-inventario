@@ -61,14 +61,7 @@ export default function ProdutoDetalhe({ produtoId, onBack, onViewProduto, onChe
             <div className="aspect-square rounded-2xl overflow-hidden bg-slate-100">
               <img src={produto.imagem} alt={produto.nome} className="w-full h-full object-cover" />
             </div>
-            {/* Thumbnails (same image, different crop for demo) */}
-            <div className="grid grid-cols-4 gap-2">
-              {[0, 1, 2, 3].map((i) => (
-                <div key={i} className={`aspect-square rounded-lg overflow-hidden cursor-pointer border-2 transition-colors ${i === 0 ? 'border-blue-500' : 'border-slate-200 hover:border-blue-300'}`}>
-                  <img src={produto.imagem} alt="" className="w-full h-full object-cover" />
-                </div>
-              ))}
-            </div>
+            {/* O cadastro atual possui apenas uma imagem por produto. */}
           </div>
 
           {/* Details */}
@@ -83,13 +76,7 @@ export default function ProdutoDetalhe({ produtoId, onBack, onViewProduto, onChe
 
             <h1 className="text-3xl font-bold text-slate-900 mb-4 leading-tight">{produto.nome}</h1>
 
-            {/* Rating (static demo) */}
-            <div className="flex items-center gap-2 mb-6">
-              <div className="flex text-amber-400 text-sm">{'★★★★☆'}</div>
-              <span className="text-sm text-slate-500">4.2 (47 avaliações)</span>
-            </div>
-
-            {/* Price */}
+             {/* Price */}
             <div className="p-4 bg-slate-50 rounded-2xl mb-6">
               <div className="text-4xl font-bold text-slate-900 mb-1">
                 R${produto.preco.toFixed(2).replace('.', ',')}
@@ -156,8 +143,7 @@ export default function ProdutoDetalhe({ produtoId, onBack, onViewProduto, onChe
                   </button>
                   <button
                     onClick={() => {
-                      addItem(produto, qty);
-                      onCheckout();
+                      if (addItem(produto, qty)) onCheckout();
                     }}
                     className="px-6 py-3.5 bg-slate-900 text-white font-semibold rounded-xl hover:bg-slate-800 transition-colors text-sm"
                   >

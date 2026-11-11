@@ -16,8 +16,17 @@ export default function Clientes() {
     const stableId = Number.isSafeInteger(numericId) && numericId > 0
       ? 100000 + numericId
       : 1000000 + [...user.id].reduce((hash, char) => (hash * 31 + char.charCodeAt(0)) >>> 0, 7) % 8000000;
+    const orders = pedidos.filter((pedido) => pedido.clienteId === user.id || (!pedido.clienteId && pedido.email?.toLowerCase() === user.email.toLowerCase()));
+    const lastOrder = [...orders].sort((a, b) => {
+      const parse = (value: string) => {
+        const [day, month, year] = value.split(' ')[0].split('/').map(Number);
+        return year ? new Date(year, month - 1, day).getTime() : 0;
+      };
+      return parse(b.data) - parse(a.data);
+    })[0];
     return { id: stableId, userId: user.id, nome: user.name, email: user.email,
-      telefone: user.telefone ?? '', totalCompras: 0, ultimaVisita: '—', bicicletas: user.bicicletas ?? 0 };
+      telefone: user.telefone ?? '', totalCompras: orders.filter((pedido) => pedido.status !== 'cancelado').reduce((sum, pedido) => sum + pedido.total, 0),
+      ultimaVisita: lastOrder?.data.split(' ')[0] ?? '—', bicicletas: user.bicicletas ?? 0 };
   });
   const items = [
     ...manualClientes.filter((client) => !users.some((user) => user.role === 'customer' && user.email.toLowerCase() === client.email.toLowerCase())),
@@ -119,7 +128,8 @@ export default function Clientes() {
           </button>
         </div>
 
-        <table className="w-full">
+        <div className="overflow-x-auto">
+        <table className="w-full min-w-[760px]">
           <thead>
             <tr className="border-b border-slate-100 bg-slate-50/50">
               {['Cliente', 'Contato', 'Bicicletas', 'Total Gasto', 'Última Visita', 'Ações'].map((h) => (

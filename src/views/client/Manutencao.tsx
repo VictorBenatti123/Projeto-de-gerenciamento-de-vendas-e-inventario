@@ -34,7 +34,7 @@ export default function Manutencao() {
 
   const minDate = new Date();
   minDate.setDate(minDate.getDate() + 1);
-  const minDateStr = minDate.toISOString().split('T')[0];
+  const minDateStr = `${minDate.getFullYear()}-${String(minDate.getMonth() + 1).padStart(2, '0')}-${String(minDate.getDate()).padStart(2, '0')}`;
   const horariosOcupados = new Set(
     agendamentos
       .filter((agendamento) => agendamento.date === selectedDate)

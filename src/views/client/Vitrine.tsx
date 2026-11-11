@@ -17,7 +17,7 @@ interface Props {
 }
 
 export default function Vitrine({ onViewProduto, onSchedule }: Props) {
-  const { addItem } = useCart();
+  const { addItem, permiteSemEstoque } = useCart();
   const { produtos } = useProdutos();
   const [cat, setCat] = useState('Todos');
   const [search, setSearch] = useState('');
@@ -186,10 +186,10 @@ export default function Vitrine({ onViewProduto, onSchedule }: Props) {
                     <div className="flex gap-2">
                       <button
                         onClick={() => addItem(p)}
-                        disabled={p.estoque === 0}
+                        disabled={p.estoque === 0 && !permiteSemEstoque}
                         className="flex-1 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-md hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                       >
-                        {p.estoque === 0 ? 'Esgotado' : '+ Carrinho'}
+                        {p.estoque === 0 && !permiteSemEstoque ? 'Esgotado' : '+ Carrinho'}
                       </button>
                       <button
                         onClick={() => onViewProduto(p.id)}

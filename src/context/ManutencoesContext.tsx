@@ -34,10 +34,17 @@ function sortAgendamentos(items: AgendamentoManutencao[]) {
 export function ManutencoesProvider({ children }: { children: ReactNode }) {
   const [agendamentos, setAgendamentos] = usePersistentState<AgendamentoManutencao[]>('slm.agendamentos.v1', initialData);
 
-  const horarioDisponivel = (date: string, hora: string, ignorarId?: number) =>
-    !agendamentos.some((item) =>
+  const horarioDisponivel = (date: string, hora: string, ignorarId?: number) => {
+    const [year, month, day] = date.split('-').map(Number);
+    const requestedDate = new Date(year, month - 1, day);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    requestedDate.setHours(0, 0, 0, 0);
+    if (!year || !month || !day || requestedDate < today) return false;
+    return !agendamentos.some((item) =>
       item.id !== ignorarId && item.date === date && item.hora === hora && item.status !== 'concluido'
     );
+  };
 
   const adicionarAgendamento = (agendamento: NovoAgendamento) => {
     if (!horarioDisponivel(agendamento.date, agendamento.hora)) return false;

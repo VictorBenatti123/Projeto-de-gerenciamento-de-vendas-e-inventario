@@ -29,6 +29,7 @@ type NovoPedido = Omit<Pedido, 'id'>;
 interface PedidosContextValue {
   pedidos: Pedido[];
   adicionarPedido: (pedido: NovoPedido) => Pedido;
+  atualizarStatusPedido: (id: number, status: Venda['status']) => void;
 }
 
 const PedidosContext = createContext<PedidosContextValue | null>(null);
@@ -51,8 +52,12 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
     return novoPedido;
   };
 
+  const atualizarStatusPedido = (id: number, status: Venda['status']) => {
+    setPedidos((current) => current.map((pedido) => pedido.id === id ? { ...pedido, status } : pedido));
+  };
+
   return (
-    <PedidosContext.Provider value={{ pedidos, adicionarPedido }}>
+    <PedidosContext.Provider value={{ pedidos, adicionarPedido, atualizarStatusPedido }}>
       {children}
     </PedidosContext.Provider>
   );

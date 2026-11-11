@@ -5,8 +5,7 @@ import { useProdutos } from '../context/ProdutosContext';
 import {
   addDays,
   formatPercentChange,
-  latestDate,
-  parseBrDate,
+    parseBrDate,
   parseIsoDate,
 } from '../utils/analytics';
 
@@ -40,10 +39,8 @@ export default function Relatorios() {
   const [period, setPeriod] = useState<Period>('30d');
 
   const config = periodConfig[period];
-  const referenceDate = latestDate([
-    ...pedidos.map((pedido) => parseBrDate(pedido.data)),
-    ...agendamentos.map((agendamento) => parseIsoDate(agendamento.date)),
-  ]);
+  const referenceDate = new Date();
+  referenceDate.setHours(12, 0, 0, 0);
   const periodStart = addDays(referenceDate, -(config.days - 1));
   const previousStart = addDays(periodStart, -config.days);
   const previousEnd = addDays(periodStart, -1);
