@@ -59,7 +59,10 @@ export function PedidosProvider({ children }: { children: ReactNode }) {
   };
 
   const atualizarStatusPedido = (id: number, status: Venda['status']) => {
-    setPedidos((current) => current.map((pedido) => pedido.id === id ? { ...pedido, status } : pedido));
+    setPedidos((current) => current.map((pedido) => {
+      if (pedido.id !== id || pedido.status === 'cancelado') return pedido;
+      return { ...pedido, status };
+    }));
   };
 
   return (

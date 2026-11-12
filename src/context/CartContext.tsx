@@ -14,6 +14,9 @@ interface CartContextValue {
   removeItem: (id: number) => void;
   updateQty: (id: number, quantidade: number) => boolean;
   clearCart: () => void;
+  beginBuyNow: (produto: Produto, quantidade?: number) => boolean;
+  buyNowItems: CartItem[] | null;
+  clearBuyNow: () => void;
   total: number;
   count: number;
   isOpen: boolean;
@@ -31,6 +34,7 @@ const SETTINGS_KEY = 'slm.configuracoes.v1';
 export function CartProvider({ children }: { children: ReactNode }) {
   const { produtos } = useProdutos();
   const [storedItems, setStoredItems] = usePersistentState<CartItem[]>(CART_KEY, []);
+  const [buyNowItems, setBuyNowItems] = useState<CartItem[] | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
@@ -87,6 +91,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
     setStoredItems([]);
     setNotice(null);
   };
+  const beginBuyNow = (produto: Produto, quantidade = 1) => {
+    const currentProduct = produtos.find((item) => item.id === produto.id);
+    const requestedQuantity = Math.max(1, Math.floor(quantidade));
+    if (!currentProduct) {
+      setNotice('Este produto não está mais disponível no catálogo.');
+      return false;
+    }
+    if (!allowsBackorder() && requestedQuantity > currentProduct.estoque) {
+      setNotice('Estoque insuficiente. Disponível: ' + currentProduct.estoque + ' unidade(s).');
+      return false;
+    }
+    setBuyNowItems([{ produto: currentProduct, quantidade: requestedQuantity }]);
+    setNotice(null);
+    setIsOpen(false);
+    return true;
+  };
+  const clearBuyNow = () => setBuyNowItems(null);
   const clearNotice = () => setNotice(null);
   const openCart = () => setIsOpen(true);
   const closeCart = () => setIsOpen(false);
@@ -97,12 +118,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
       return product ? { ...item, produto: product } : null;
     })
     .filter((item): item is CartItem => item !== null);
+  const currentBuyNowItems = buyNowItems?.map((item) => {
+    const product = produtos.find((candidate) => candidate.id === item.produto.id);
+    return product ? { ...item, produto: product } : null;
+  }).filter((item): item is CartItem => item !== null) ?? null;
   const total = items.reduce((sum, item) => sum + item.produto.preco * item.quantidade, 0);
   const count = items.reduce((sum, item) => sum + item.quantidade, 0);
 
   return (
     <CartContext.Provider value={{
-      items, addItem, removeItem, updateQty, clearCart, total, count,
+      items, addItem, removeItem, updateQty, clearCart, beginBuyNow,
+      buyNowItems: currentBuyNowItems, clearBuyNow, total, count,
       isOpen, notice, permiteSemEstoque, clearNotice, openCart, closeCart,
     }}>
       {children}

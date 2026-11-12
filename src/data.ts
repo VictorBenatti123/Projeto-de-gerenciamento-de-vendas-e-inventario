@@ -11,6 +11,7 @@ export interface Produto {
   fornecedor: string;
   descricao: string;
   imagem: string;
+  galeria?: string[];
   naVitrine: boolean;
 }
 

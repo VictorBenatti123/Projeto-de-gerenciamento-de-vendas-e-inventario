@@ -11,6 +11,11 @@ export default function ProductFormModal({ onClose }: { onClose: () => void }) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     const categoria = String(form.get('categoria'));
+    const galeria = [...new Set(String(form.get('galeria') ?? '')
+      .split(/[\r\n,]+/)
+      .map((url) => url.trim())
+      .filter((url) => /^https?:\/\//i.test(url)))];
+    const imagem = galeria[0] ?? categoryImages[categoria] ?? categoryImages.Componentes;
     addProduto({
       nome: String(form.get('nome')).trim(),
       sku: String(form.get('sku')).trim().toUpperCase(),
@@ -21,7 +26,8 @@ export default function ProductFormModal({ onClose }: { onClose: () => void }) {
       estoque: Number(form.get('estoque')),
       estoqueMinimo: Number(form.get('estoqueMinimo')),
       descricao: String(form.get('descricao')).trim() || 'Produto cadastrado no painel administrativo.',
-      imagem: categoryImages[categoria] ?? categoryImages.Componentes,
+      imagem,
+      galeria: galeria.length > 0 ? galeria : undefined,
       naVitrine: form.get('naVitrine') === 'on',
     });
     onClose();
@@ -68,6 +74,11 @@ export default function ProductFormModal({ onClose }: { onClose: () => void }) {
           <label className="col-span-2 text-xs font-semibold text-slate-600">
             Descrição
             <textarea name="descricao" rows={3} className={`${fieldClass} mt-1.5 resize-none`} placeholder="Detalhes e especificações do produto" />
+          </label>
+          <label className="col-span-2 text-xs font-semibold text-slate-600">
+            Galeria de imagens (URLs)
+            <textarea name="galeria" rows={3} className={`${fieldClass} mt-1.5 resize-none`} placeholder="https://... (uma URL por linha)" />
+            <span className="mt-1 block font-normal text-slate-400">Use URLs públicas HTTP/HTTPS. A primeira imagem será a capa do produto.</span>
           </label>
         </div>
         <label className="flex items-center gap-2 text-sm text-slate-600">

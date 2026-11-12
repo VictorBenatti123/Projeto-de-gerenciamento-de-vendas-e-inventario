@@ -8,20 +8,20 @@ export default function PedidoConcluido({ onContinue }: Props) {
       <div className="w-24 h-24 bg-emerald-100 rounded-full flex items-center justify-center text-5xl mx-auto mb-8 shadow-sm">
         ✅
       </div>
-      <h1 className="text-3xl font-bold text-slate-900 mb-3">Pedido realizado com sucesso!</h1>
-      <p className="text-slate-500 text-lg mb-2">Obrigado pela sua compra.</p>
+      <h1 className="text-3xl font-bold text-slate-900 mb-3">Pedido registrado</h1>
+      <p className="text-slate-500 text-lg mb-2">Obrigado. Seu pedido foi salvo no sistema.</p>
       <p className="text-slate-400 text-sm mb-10">
-        Você receberá um e-mail de confirmação com os detalhes do pedido e as informações de entrega.
+        O pagamento ainda depende de confirmação manual. Este site não emite cobranças nem envia e-mails automaticamente.
       </p>
 
       <div className="bg-slate-50 rounded-2xl p-6 mb-10 text-left">
         <h3 className="font-semibold text-slate-800 mb-4">O que acontece agora?</h3>
         <div className="space-y-4">
           {[
-            { icon: '📧', step: '1', title: 'Confirmação por e-mail', desc: 'Você receberá os detalhes do pedido em até 5 minutos.' },
-            { icon: '📦', step: '2', title: 'Preparação do pedido', desc: 'Nossa equipe irá separar e embalar seus produtos.' },
-            { icon: '🚀', step: '3', title: 'Envio', desc: 'Seu pedido será despachado em até 2 dias úteis.' },
-            { icon: '🏠', step: '4', title: 'Entrega', desc: 'Receba em casa com rastreamento em tempo real.' },
+            { icon: '🧾', step: '1', title: 'Pedido registrado', desc: 'Os dados e itens foram salvos no sistema.' },
+            { icon: '💳', step: '2', title: 'Confirmação do pagamento', desc: 'A equipe deve confirmar o recebimento fora do site.' },
+            { icon: '📦', step: '3', title: 'Separação', desc: 'Após a confirmação, a equipe poderá preparar o pedido.' },
+            { icon: '🚚', step: '4', title: 'Envio', desc: 'O andamento da entrega deverá ser atualizado pela equipe.' },
           ].map((item) => (
             <div key={item.step} className="flex items-start gap-3">
               <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0">

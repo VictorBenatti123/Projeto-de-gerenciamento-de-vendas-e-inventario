@@ -1,6 +1,6 @@
 import { createContext, useContext, useMemo, type ReactNode } from 'react';
 import { produtos as initialProdutos, type Produto } from '../data';
-import { usePersistentState } from '../utils/storage';
+import { readStoredValue, usePersistentState } from '../utils/storage';
 
 function computeStatus(estoque: number, estoqueMinimo: number): Produto['status'] {
   if (estoque <= 0) return 'zerado';
@@ -31,6 +31,14 @@ interface ResultadoMovimentacao {
   error?: string;
 }
 
+const ESTORNOS_KEY = 'slm.estornos-pedidos.v1';
+
+function preservarHistoricoEstornos(movements: MovimentacaoEstoque[]) {
+  const estornos = movements.filter((movement) => movement.tipo === 'estorno');
+  const demais = movements.filter((movement) => movement.tipo !== 'estorno').slice(0, 500);
+  return [...estornos, ...demais];
+}
+
 interface ProdutosContextValue {
   produtos: Produto[];
   movimentacoes: MovimentacaoEstoque[];
@@ -50,6 +58,11 @@ const ProdutosContext = createContext<ProdutosContextValue | null>(null);
 export function ProdutosProvider({ children }: { children: ReactNode }) {
   const [produtos, setProdutos] = usePersistentState<Produto[]>('slm.produtos.v1', initialProdutos);
   const [movimentacoes, setMovimentacoes] = usePersistentState<MovimentacaoEstoque[]>('slm.movimentacoes-estoque.v1', []);
+  const [estornosRegistrados, setEstornosRegistrados] = usePersistentState<number[]>(
+    ESTORNOS_KEY,
+    movimentacoes.filter((movement) => movement.tipo === 'estorno' && movement.pedidoId !== undefined)
+      .map((movement) => movement.pedidoId as number)
+  );
 
   const addProduto = (produto: Omit<Produto, 'id' | 'status'>) => {
     setProdutos((current) => {
@@ -82,7 +95,7 @@ export function ProdutosProvider({ children }: { children: ReactNode }) {
       motivo: 'Ajuste manual no painel de estoque',
       data: new Date().toISOString(),
     };
-    setMovimentacoes((current) => [movement, ...current].slice(0, 500));
+    setMovimentacoes((current) => preservarHistoricoEstornos([movement, ...current]));
     return true;
   };
 
@@ -127,14 +140,17 @@ export function ProdutosProvider({ children }: { children: ReactNode }) {
       return { ...product, estoque: nextStock, status: computeStatus(nextStock, product.estoqueMinimo) };
     });
     setProdutos(nextProducts);
-    setMovimentacoes((current) => [...movements, ...current].slice(0, 500));
+    setMovimentacoes((current) => preservarHistoricoEstornos([...movements, ...current]));
     return { ok: true };
   };
 
   const registrarEstorno = (itens: ItemSaida[], pedidoId: number): ResultadoMovimentacao => {
-    if (movimentacoes.some((movement) => movement.tipo === 'estorno' && movement.pedidoId === pedidoId)) {
-      return { ok: false, error: 'O estoque deste pedido já foi estornado.' };
-    }
+    const ledgerAtual = readStoredValue<number[]>(ESTORNOS_KEY, estornosRegistrados);
+    const jaEstornado = ledgerAtual.includes(pedidoId)
+      || estornosRegistrados.includes(pedidoId)
+      || movimentacoes.some((movement) => movement.tipo === 'estorno' && movement.pedidoId === pedidoId);
+    if (jaEstornado) return { ok: false, error: 'O estoque deste pedido já foi estornado.' };
+    if (!Number.isInteger(pedidoId) || pedidoId <= 0) return { ok: false, error: 'Identificador de pedido inválido para estorno.' };
     const quantities = new Map<number, number>();
     for (const item of itens) {
       if (!Number.isInteger(item.quantidade) || item.quantidade <= 0) return { ok: false, error: 'Quantidade inválida para estorno.' };
@@ -156,8 +172,17 @@ export function ProdutosProvider({ children }: { children: ReactNode }) {
       });
       return { ...product, estoque: nextStock, status: computeStatus(nextStock, product.estoqueMinimo) };
     });
+    const nextLedger = [...new Set([...ledgerAtual, pedidoId])];
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem(ESTORNOS_KEY, JSON.stringify(nextLedger));
+      }
+    } catch {
+      return { ok: false, error: 'Não foi possível registrar a proteção contra estorno duplicado no armazenamento local.' };
+    }
+    setEstornosRegistrados(nextLedger);
     setProdutos(nextProducts);
-    setMovimentacoes((current) => [...movements, ...current].slice(0, 500));
+    setMovimentacoes((current) => preservarHistoricoEstornos([...movements, ...current]));
     return { ok: true };
   };
 

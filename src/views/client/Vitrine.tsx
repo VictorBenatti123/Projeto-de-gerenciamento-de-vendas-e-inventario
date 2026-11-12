@@ -175,7 +175,7 @@ export default function Vitrine({ onViewProduto, onSchedule }: Props) {
                           R${p.preco.toFixed(2).replace('.', ',')}
                         </div>
                         <div className="text-xs text-slate-400">
-                          em até 10x de R${(p.preco / 10).toFixed(2).replace('.', ',')}
+                          Consulte parcelamento no checkout
                         </div>
                       </div>
                       {p.estoque > 0 && (

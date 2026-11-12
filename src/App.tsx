@@ -325,10 +325,15 @@ function AdminApp() {
 // ─── Client App ───────────────────────────────────────────────────────────────
 function ClientApp({ onLogin }: { onLogin: () => void }) {
   const { user } = useAuth();
+  const { buyNowItems, clearBuyNow } = useCart();
   const [page, setPage] = useState<ClientPage>('vitrine');
+
+  useEffect(() => {
+    if (user && buyNowItems && buyNowItems.length > 0) setPage('checkout');
+  }, [user?.id, Boolean(buyNowItems?.length)]);
   const [produtoId, setProdutoId] = useState<number | null>(null);
 
-  const goToProduto = (id: number) => { setProdutoId(id); setPage('produto'); };
+  const goToProduto = (id: number) => { clearBuyNow(); setProdutoId(id); setPage('produto'); };
   const goToCheckout = () => {
     if (!user) {
       onLogin();
@@ -336,13 +341,13 @@ function ClientApp({ onLogin }: { onLogin: () => void }) {
     }
     setPage('checkout');
   };
-  const goToVitrine = () => { setPage('vitrine'); setProdutoId(null); };
+  const goToVitrine = () => { clearBuyNow(); setPage('vitrine'); setProdutoId(null); };
 
   return (
     <div className="min-h-screen bg-slate-50">
       <ClientNav
         currentPage={(page === 'produto' || page === 'concluido' ? 'vitrine' : page) as 'vitrine' | 'checkout' | 'manutencao' | 'contato'}
-        onNavigate={(p) => { setPage(p as ClientPage); setProdutoId(null); }}
+        onNavigate={(p) => { clearBuyNow(); setPage(p as ClientPage); setProdutoId(null); }}
         onLogin={onLogin}
       />
       <CartDrawer onCheckout={goToCheckout} />
