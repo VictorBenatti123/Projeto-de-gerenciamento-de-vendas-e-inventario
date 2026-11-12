@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import { CartProvider } from './context/CartContext';
+import { CartProvider, useCart } from './context/CartContext';
 import { ProdutosProvider, useProdutos } from './context/ProdutosContext';
 import { ManutencoesProvider, useManutencoes } from './context/ManutencoesContext';
 import { PedidosProvider, usePedidos } from './context/PedidosContext';

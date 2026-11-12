@@ -80,6 +80,7 @@ export default function Checkout({ onBack, onSuccess }: Props) {
       setLoading(false);
       return;
     }
+    await new Promise((resolve) => setTimeout(resolve, 120));
     const orderTotal = Number(checkoutTotal.toFixed(2));
     const grossItemsTotal = itemsToSell.reduce((sum, item) => sum + item.produto.preco * item.quantidade, 0);
     let remainingOrderTotal = orderTotal;
@@ -350,7 +351,7 @@ export default function Checkout({ onBack, onSuccess }: Props) {
                   <span>Frete</span>
                   <span className="text-emerald-600 font-medium">Grátis</span>
                 </div>
-<div className="flex justify-between text-base font-bold text-slate-900 pt-2 border-t border-slate-100">
+                <div className="flex justify-between text-base font-bold text-slate-900 pt-2 border-t border-slate-100">
                   <span>Total</span>
                   <span>R${checkoutTotal.toFixed(2).replace('.', ',')}</span>
                 </div>
